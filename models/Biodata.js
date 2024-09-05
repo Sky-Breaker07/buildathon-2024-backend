@@ -49,12 +49,6 @@ const biodataSchema = new mongoose.Schema(
 			required: true,
 			trim: true,
 		},
-
-		hospital_record: {
-			type: mongoose.Schema.Types.ObjectId,
-			ref: 'HospitalRecord',
-			required: true,
-		},
 	},
 	{ timestamps: true }
 );

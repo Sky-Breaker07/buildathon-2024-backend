@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
-const BioData = require('../models/Biodata');
-const HospitalRecord = require('../models/HospitalRecord');
-const Patient = require('../models/Patient');
+const BioData = require('../../models/Biodata');
+const HospitalRecord = require('../../models/HospitalRecord');
+const Patient = require('../../models/Patient');
 
 const registerPatient = async (bioDataInfo) => {
 	const session = await mongoose.startSession();
@@ -39,10 +39,7 @@ const registerPatient = async (bioDataInfo) => {
 		session.endSession();
 
 		const patientData = await HospitalRecord.findById(hospitalRecord._id)
-			.populate({
-				path: 'biodata',
-				select: '-hospital_record',
-			})
+			.populate('biodata')
 			.orFail()
 			.exec();
 
@@ -54,4 +51,4 @@ const registerPatient = async (bioDataInfo) => {
 	}
 };
 
-module.exports = { registerPatient };
+module.exports = registerPatient;
