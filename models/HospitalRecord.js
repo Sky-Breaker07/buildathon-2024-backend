@@ -36,6 +36,14 @@ const hospitalRecordSchema = new mongoose.Schema({
 			},
 		},
 	],
+
+	professionals_assigned: [
+		{
+			type: mongoose.Schema.Types.ObjectId,
+			ref: 'HealthCareProfessional',
+			default: null,
+		},
+	],
 });
 
 hospitalRecordSchema.pre('save', async function (next) {

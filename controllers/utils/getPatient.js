@@ -1,6 +1,7 @@
 const Patient = require('../../models/Patient');
 const HospitalRecord = require('../../models/HospitalRecord');
 const { errorHandler } = require('../../utils/utils');
+const { StatusCodes } = require('http-status-codes');
 
 /**
  *
@@ -17,7 +18,11 @@ const getPatient = async (hospital_id, res) => {
 		});
 
 		if (!hospitalRecord) {
-			return errorHandler(res, 404, 'Hospital Record not found');
+			return errorHandler(
+				res,
+				StatusCodes.NOT_FOUND,
+				'Hospital Record not found'
+			);
 		}
 
 		const patient = await Patient.findOne({
@@ -32,7 +37,11 @@ const getPatient = async (hospital_id, res) => {
 			.exec();
 
 		if (!patient) {
-			return errorHandler(res, 404, 'Patient not found');
+			return errorHandler(
+				res,
+				StatusCodes.NOT_FOUND,
+				'Patient not found'
+			);
 		}
 
 		return patient;
