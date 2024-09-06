@@ -1,4 +1,4 @@
-const { registerPatient, getHospitalRecord } = require('./utils');
+const { registerPatient, getHospitalRecord, getPatient } = require('./utils');
 const { errorHandler, successHandler } = require('../utils/utils');
 
 const registerPatientController = async (req, res) => {
@@ -19,7 +19,12 @@ const registerPatientController = async (req, res) => {
 
 const getHospitalRecordController = async (req, res) => {
 	try {
-		const hospitalRecord = await getHospitalRecord(req.body);
+		const { hospital_id } = req.body;
+
+		if (!hospital_id) {
+			return errorHandler(res, 400, 'Hospital ID is required.');
+		}
+		const hospitalRecord = await getHospitalRecord(hospital_id);
 
 		successHandler(
 			res,
@@ -33,4 +38,25 @@ const getHospitalRecordController = async (req, res) => {
 	}
 };
 
-module.exports = { registerPatientController, getHospitalRecordController };
+const getPatientController = async (req, res) => {
+	try {
+		const { hospital_id } = req.body;
+
+		if (!hospital_id) {
+			return errorHandler(res, 400, 'Hospital ID is required.');
+		}
+
+		const patient = await getPatient(hospital_id);
+
+		successHandler(res, 200, patient, 'Patient fetched successfully.');
+	} catch (error) {
+		console.error(error);
+		errorHandler(res, 500, 'Server Error.');
+	}
+};
+
+module.exports = {
+	registerPatientController,
+	getHospitalRecordController,
+	getPatientController,
+};
