@@ -24,7 +24,7 @@ const getHospitalRecordController = async (req, res) => {
 		if (!hospital_id) {
 			return errorHandler(res, 400, 'Hospital ID is required.');
 		}
-		const hospitalRecord = await getHospitalRecord(hospital_id);
+		const hospitalRecord = await getHospitalRecord(hospital_id, res);
 
 		successHandler(
 			res,
@@ -46,7 +46,7 @@ const getPatientController = async (req, res) => {
 			return errorHandler(res, 400, 'Hospital ID is required.');
 		}
 
-		const patient = await getPatient(hospital_id);
+		const patient = await getPatient(hospital_id, res);
 
 		successHandler(res, 200, patient, 'Patient fetched successfully.');
 	} catch (error) {

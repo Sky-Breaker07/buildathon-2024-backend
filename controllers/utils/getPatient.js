@@ -1,5 +1,6 @@
 const Patient = require('../../models/Patient');
 const HospitalRecord = require('../../models/HospitalRecord');
+const { errorHandler } = require('../../utils/utils');
 
 /**
  *
@@ -9,14 +10,14 @@ const HospitalRecord = require('../../models/HospitalRecord');
  * @description This function is used to get the full patient record whose hospital_id is passed.
  */
 
-const getPatient = async (hospital_id) => {
+const getPatient = async (hospital_id, res) => {
 	try {
 		const hospitalRecord = await HospitalRecord.findOne({
 			hospital_id: hospital_id,
 		});
 
 		if (!hospitalRecord) {
-			throw new Error('Hospital Record not found.');
+			return errorHandler(res, 404, 'Hospital Record not found');
 		}
 
 		const patient = await Patient.findOne({
@@ -31,7 +32,7 @@ const getPatient = async (hospital_id) => {
 			.exec();
 
 		if (!patient) {
-			throw new Error('Patient not Found.');
+			return errorHandler(res, 404, 'Patient not found');
 		}
 
 		return patient;
