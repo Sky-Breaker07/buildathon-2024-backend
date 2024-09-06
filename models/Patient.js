@@ -12,6 +12,14 @@ const patientSchema = new mongoose.Schema({
 		ref: 'HospitalRecord',
 		required: true,
 	},
+
+	vital_signs: [
+		{
+			type: mongoose.Schema.Types.ObjectId,
+			ref: 'VitalSign',
+			default: null,
+		},
+	],
 });
 
 const Patient = mongoose.model('Patient', patientSchema);

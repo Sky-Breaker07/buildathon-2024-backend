@@ -1,5 +1,6 @@
 const HospitalRecord = require('../../models/HospitalRecord');
 const { errorHandler } = require('../../utils/utils');
+const { StatusCodes } = require('http-status-codes');
 
 /**
  *
@@ -19,7 +20,11 @@ const getHospitalRecord = async (hospital_id, res) => {
 			.exec();
 
 		if (!hospitalRecord) {
-			return errorHandler(res, 404, 'Hospital Record not found');
+			return errorHandler(
+				res,
+				StatusCodes.NOT_FOUND,
+				'Hospital Record not found'
+			);
 		}
 
 		return hospitalRecord;
