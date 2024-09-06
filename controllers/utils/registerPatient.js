@@ -21,7 +21,6 @@ const registerPatient = async (bioDataInfo) => {
 
 		const bioData = new BioData({
 			...bioDataInfo,
-			hospital_record: hospitalRecord._id,
 		});
 		await bioData.save({ session });
 
