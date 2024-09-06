@@ -18,6 +18,14 @@ const healthCareProfessionalSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  securityAnswer: {
+    type: String,
+    required: false,
+  },
+  securityQuestion: {
+    type: String,
+    required: false,
+  },
   patientsAssigned: [
     {
       type: mongoose.Schema.Types.ObjectId,
