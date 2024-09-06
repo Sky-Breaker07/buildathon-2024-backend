@@ -2,7 +2,11 @@ const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
 
 const healthCareProfessionalSchema = new mongoose.Schema({
-  name: {
+  firstName: {
+    type: String,
+    required: true,
+  },
+  lastName: {
     type: String,
     required: true,
   },
@@ -17,6 +21,14 @@ const healthCareProfessionalSchema = new mongoose.Schema({
   profession: {
     type: String,
     required: true,
+  },
+  securityAnswer: {
+    type: String,
+    required: false,
+  },
+  securityQuestion: {
+    type: String,
+    required: false,
   },
   patientsAssigned: [
     {
@@ -72,13 +84,9 @@ healthCareProfessionalSchema.pre("findOneAndUpdate", async function (next) {
 });
 
 healthCareProfessionalSchema.methods.createJWT = function () {
-  return jwt.sign(
-    { studentId: this._id, matricNumber: this.matricNumber },
-    process.env.JWT_SECRET,
-    {
-      expiresIn: process.env.JWT_LIFETIME,
-    }
-  );
+  return jwt.sign({ staff_id: this.staff_id }, process.env.JWT_SECRET, {
+    expiresIn: process.env.JWT_LIFETIME,
+  });
 };
 
 healthCareProfessionalSchema.methods.comparePassword = async function (

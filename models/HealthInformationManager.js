@@ -2,7 +2,11 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
 const healthInformationManagerSchema = new mongoose.Schema({
-    name: {
+    firstName: {
+        type: String,
+        required: true,
+    },
+    lastName: {
         type: String,
         required: true,
     },
@@ -20,6 +24,14 @@ const healthInformationManagerSchema = new mongoose.Schema({
         required: true,
     },
     password: {
+        type: String,
+        required: true,
+    },
+    securityAnswer: {
+        type: String,
+        required: true,
+    },
+    securityQuestion: {
         type: String,
         required: true,
     },
@@ -62,7 +74,7 @@ const healthInformationManagerSchema = new mongoose.Schema({
       
       healthInformationManagerSchema.methods.createJWT = function () {
         return jwt.sign(
-          { studentId: this._id, matricNumber: this.matricNumber },
+          { staff_id: this.staff_id },
           process.env.JWT_SECRET,
           {
             expiresIn: process.env.JWT_LIFETIME,
