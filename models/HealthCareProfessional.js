@@ -2,37 +2,44 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
 const healthCareProfessionalSchema = new mongoose.Schema({
-	name: {
-		type: String,
-		required: true,
-	},
-	email: {
-		type: String,
-		required: false,
-	},
-	staff_id: {
-		type: String,
-		required: true,
-	},
-	profession: {
-		type: String,
-		required: true,
-	},
-	patientsAssigned: [
-		{
-			type: mongoose.Schema.Types.ObjectId,
-			ref: 'HospitalRecord',
-			default: null,
-		},
-	],
-	password: {
-		type: String,
-		required: true,
-	},
-	isAdmin: {
-		type: Boolean,
-		default: false,
-	},
+  name: {
+    type: String,
+    required: true,
+  },
+  email: {
+    type: String,
+    required: false,
+  },
+  staff_id: {
+    type: String,
+    required: true,
+  },
+  profession: {
+    type: String,
+    required: true,
+  },
+  securityAnswer: {
+    type: String,
+    required: false,
+  },
+  securityQuestion: {
+    type: String,
+    required: false,
+  },
+  patientsAssigned: [
+    {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "HospitalRecord",
+    },
+  ],
+  password: {
+    type: String,
+    required: true,
+  },
+  isAdmin: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 healthCareProfessionalSchema.pre('save', async function (next) {
@@ -73,13 +80,13 @@ healthCareProfessionalSchema.pre('findOneAndUpdate', async function (next) {
 });
 
 healthCareProfessionalSchema.methods.createJWT = function () {
-	return jwt.sign(
-		{ studentId: this._id, matricNumber: this.matricNumber },
-		process.env.JWT_SECRET,
-		{
-			expiresIn: process.env.JWT_LIFETIME,
-		}
-	);
+  return jwt.sign(
+    { studentId: this._id, matricNumber: this.matricNumber },
+    process.env.JWT_SECRET,
+    {
+      expiresIn: process.env.JWT_LIFETIME,
+    }
+  );
 };
 
 healthCareProfessionalSchema.methods.comparePassword = async function (
