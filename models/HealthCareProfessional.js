@@ -40,6 +40,10 @@ const healthCareProfessionalSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
+  registeredBy: {
+    type: String,
+    required: true,
+  },
 });
 
 healthCareProfessionalSchema.pre('save', async function (next) {

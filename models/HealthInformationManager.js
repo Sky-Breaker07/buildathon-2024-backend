@@ -35,9 +35,9 @@ const healthInformationManagerSchema = new mongoose.Schema({
         type: String,
         required: true,
     },
-    isAdmin: {
-        type: Boolean,
-        default: false,
+    registeredBy: {
+      type: String,
+      required: true,
     }
     })
 
