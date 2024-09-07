@@ -9,6 +9,7 @@ const cors = require('cors');
 const connectDB = require('./db/conn');
 const patientRouter = require('./router/Patient');
 const assessmentTemplateRouter = require('./router/AssessmentTemplate');
+const staffRoutes = require('./routes/staff');
 
 // App Setup
 const app = express();
@@ -19,6 +20,7 @@ app.use(cors());
 app.use(express.json());
 app.use('/api/v1/patients', patientRouter);
 app.use('/api/v1/assessment-template', assessmentTemplateRouter);
+app.use('/api/v1/staff', staffRoutes);
 
 const startServer = async () => {
 	try {
