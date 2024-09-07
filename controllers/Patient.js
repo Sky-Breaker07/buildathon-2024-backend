@@ -1,13 +1,14 @@
 const {
-	registerPatient,
-	getHospitalRecord,
-	getPatient,
-	createAssessment,
-} = require('./utils');
+	createAssessment
+} = require('./Assessment');
+
+const {registerPatient, getHospitalRecord, getPatient} = require('./utils');
 const mongoose = require('mongoose');
 const { errorHandler, successHandler } = require('../utils/utils');
 const { StatusCodes } = require('http-status-codes');
 const Patient = require('../models/Patient');
+
+const { createTreatment } = require('./Treatment');
 
 const registerPatientController = async (req, res) => {
 	try {
@@ -133,9 +134,67 @@ const createAssessmentController = async (req, res) => {
 	}
 };
 
+const createTreatmentController = async (req, res) => {
+	const session = await mongoose.startSession();
+	session.startTransaction();
+
+	try {
+		const { template_name, treatment_data, hospital_id } = req.body;
+
+		if (!template_name || !treatment_data || !hospital_id) {
+			return errorHandler(
+				res,
+				StatusCodes.BAD_REQUEST,
+				'All fields are required.'
+			);
+		}
+
+		const { treatment, hospitalRecordId } = await createTreatment(
+			template_name,
+			treatment_data,
+			res,
+			hospital_id,
+			session
+		);
+
+		const patient = await Patient.findOne({
+			hospital_record: hospitalRecordId,
+		}).session(session);
+
+		if (!patient) {
+			await session.abortTransaction();
+			session.endSession();
+			return errorHandler(
+				res,
+				StatusCodes.NOT_FOUND,
+				'Patient not found.'
+			);
+		}
+
+		patient.treatments.push(treatment._id);
+		await patient.save({ session });
+
+		await session.commitTransaction();
+		session.endSession();
+
+		successHandler(
+			res,
+			StatusCodes.CREATED,
+			treatment,
+			'Treatment created successfully.'
+		);
+	} catch (error) {
+		await session.abortTransaction();
+		session.endSession();
+		console.error('Error creating treatment:', error.message);
+		errorHandler(res, StatusCodes.INTERNAL_SERVER_ERROR, 'Server Error.');
+	}
+};
+
 module.exports = {
 	registerPatientController,
 	getHospitalRecordController,
 	getPatientController,
 	createAssessmentController,
+	createTreatmentController,
 };
