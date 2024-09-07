@@ -31,7 +31,17 @@ const getPatient = async (hospital_id, res) => {
 			.populate('biodata')
 			.populate({
 				path: 'hospital_record',
-				select: '-biodata',
+				select: '-biodata -_id',
+			})
+			.populate({
+				path: 'assessments',
+				select: '-hospital_record -_id',
+				populate: [
+					{
+						path: 'template',
+						select: 'name profession -_id',
+					},
+				],
 			})
 			.orFail()
 			.exec();

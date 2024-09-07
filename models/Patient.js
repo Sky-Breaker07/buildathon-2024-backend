@@ -20,6 +20,14 @@ const patientSchema = new mongoose.Schema({
 			default: null,
 		},
 	],
+
+	assessments: [
+		{
+			type: mongoose.Schema.Types.ObjectId,
+			ref: 'Assessment',
+			default: null,
+		},
+	],
 });
 
 const Patient = mongoose.model('Patient', patientSchema);
