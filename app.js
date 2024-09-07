@@ -8,7 +8,7 @@ const cors = require('cors');
 // File imports
 const connectDB = require('./db/conn');
 const patientRouter = require('./router/Patient');
-const createAssessmentTemplateRouter = require('./router/CreateAssessmentSchema');
+const assessmentTemplateRouter = require('./router/AssessmentTemplate');
 
 // App Setup
 const app = express();
@@ -18,7 +18,7 @@ const PORT = process.env.PORT;
 app.use(cors());
 app.use(express.json());
 app.use('/api/v1/patients', patientRouter);
-app.use('/api/v1/assessment-template', createAssessmentTemplateRouter);
+app.use('/api/v1/assessment-template', assessmentTemplateRouter);
 
 const startServer = async () => {
 	try {

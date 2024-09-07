@@ -43,6 +43,8 @@ const assessmentTemplateSchema = new mongoose.Schema(
 	{ timestamps: true }
 );
 
+assessmentTemplateSchema.index({ name: 1, profession: 1 }, { unique: true });
+
 const AssessmentTemplate = mongoose.model(
 	'AssessmentTemplate',
 	assessmentTemplateSchema
