@@ -1,6 +1,7 @@
 # CareLog API Documentation
 
 ## Table of Contents
+
 1. [Authentication](#authentication)
 2. [Staff Management](#staff-management)
 3. [Patient Management](#patient-management)
@@ -17,6 +18,7 @@ All protected routes require a valid JWT token in the Authorization header.
 ## Staff Management
 
 ### Register Super Admin
+
 - **URL:** `/api/v1/staff/register-super-admin`
 - **Method:** `POST`
 - **Request Body:**
@@ -34,9 +36,30 @@ All protected routes require a valid JWT token in the Authorization header.
     "organizationDescription": "string"
   }
   ```
-- **Response:** Returns the created Super Admin details and organization information.
+- **Response:**
+  ```json
+  {
+    "status": "success",
+    "statusCode": 201,
+    "message": "Super Admin registered successfully",
+    "data": {
+      "superAdmin": {
+        "firstName": "string",
+        "lastName": "string",
+        "email": "string",
+        "staff_id": "string"
+      },
+      "organization": {
+        "name": "string",
+        "organization_id": "string"
+      },
+      "token": "string"
+    }
+  }
+  ```
 
 ### Register Admin Healthcare Professional
+
 - **URL:** `/api/v1/staff/register-admin-hcp`
 - **Method:** `POST`
 - **Auth Required:** Yes
@@ -51,9 +74,26 @@ All protected routes require a valid JWT token in the Authorization header.
     "securityAnswer": "string"
   }
   ```
-- **Response:** Returns the created Admin Healthcare Professional details.
+- **Response:**
+  ```json
+  {
+    "status": "success",
+    "statusCode": 201,
+    "message": "Admin Healthcare Professional created successfully",
+    "data": {
+      "adminHealthcareProfessional": {
+        "name": "string",
+        "email": "string",
+        "staff_id": "string",
+        "profession": "string",
+        "isAdmin": true
+      }
+    }
+  }
+  ```
 
 ### Register Healthcare Professional
+
 - **URL:** `/api/v1/staff/register-hcp`
 - **Method:** `POST`
 - **Auth Required:** Yes
@@ -68,9 +108,27 @@ All protected routes require a valid JWT token in the Authorization header.
     "securityAnswer": "string"
   }
   ```
-- **Response:** Returns the created Healthcare Professional details.
+- **Response:**
+  ```json
+  {
+    "status": "success",
+    "statusCode": 201,
+    "message": "Healthcare Professional registered successfully",
+    "data": {
+      "healthcareProfessional": {
+        "name": "string",
+        "email": "string",
+        "staff_id": "string",
+        "profession": "string",
+        "isAdmin": false,
+        "registeredBy": "string"
+      }
+    }
+  }
+  ```
 
 ### Register Health Information Manager
+
 - **URL:** `/api/v1/staff/register-him`
 - **Method:** `POST`
 - **Auth Required:** Yes
@@ -84,33 +142,124 @@ All protected routes require a valid JWT token in the Authorization header.
     "securityAnswer": "string"
   }
   ```
-- **Response:** Returns the created Health Information Manager details.
+- **Response:**
+  ```json
+  {
+    "status": "success",
+    "statusCode": 201,
+    "message": "Health Information Manager registered successfully",
+    "data": {
+      "healthInformationManager": {
+        "firstName": "string",
+        "lastName": "string",
+        "email": "string",
+        "staff_id": "string",
+        "registeredBy": "string"
+      }
+    }
+  }
+  ```
 
 ### Get All Healthcare Professionals
+
 - **URL:** `/api/v1/staff/hcp`
 - **Method:** `GET`
 - **Auth Required:** Yes
-- **Response:** Returns a list of all Healthcare Professionals.
+- **Response:**
+  ```json
+  {
+    "status": "success",
+    "statusCode": 200,
+    "message": "Healthcare Professionals retrieved successfully",
+    "data": {
+      "healthcareProfessionals": [
+        {
+          "name": "string",
+          "email": "string",
+          "staff_id": "string",
+          "profession": "string",
+          "isAdmin": "boolean"
+        }
+      ]
+    }
+  }
+  ```
 
 ### Get Admin Healthcare Professionals
+
 - **URL:** `/api/v1/staff/admin-hcp`
 - **Method:** `GET`
 - **Auth Required:** Yes
-- **Response:** Returns a list of all Admin Healthcare Professionals.
+- **Response:**
+  ```json
+  {
+    "status": "success",
+    "statusCode": 200,
+    "message": "Admin Healthcare Professionals retrieved successfully",
+    "data": {
+      "adminHealthcareProfessionals": [
+        {
+          "name": "string",
+          "email": "string",
+          "staff_id": "string",
+          "profession": "string"
+        }
+      ]
+    }
+  }
+  ```
 
 ### Get Healthcare Professionals by Profession
+
 - **URL:** `/api/v1/staff/hcp/:profession`
 - **Method:** `GET`
 - **Auth Required:** Yes
-- **Response:** Returns a list of Healthcare Professionals filtered by profession.
+- **Response:**
+  ```json
+  {
+    "status": "success",
+    "statusCode": 200,
+    "message": "Healthcare Professionals in {profession} retrieved successfully",
+    "data": {
+      "healthcareProfessionals": [
+        {
+          "name": "string",
+          "email": "string",
+          "staff_id": "string",
+          "profession": "string",
+          "isAdmin": "boolean"
+        }
+      ]
+    }
+  }
+  ```
 
 ### Get All Health Information Managers
+
 - **URL:** `/api/v1/staff/him`
 - **Method:** `GET`
 - **Auth Required:** Yes
-- **Response:** Returns a list of all Health Information Managers.
+- **Response:**
+  ```json
+  {
+    "status": "success",
+    "statusCode": 200,
+    "message": "Health Information Managers retrieved successfully",
+    "data": {
+      "healthInformationManagers": [
+        {
+          "firstName": "string",
+          "lastName": "string",
+          "email": "string",
+          "staff_id": "string"
+        }
+      ]
+    }
+  }
+  ```
 
 ### Change Healthcare Professional Admin Status
+
 - **URL:** `/api/v1/staff/hcp/:staff_id/admin-status`
 - **Method:** `PATCH`
 - **Auth Required:** Yes
@@ -120,23 +269,58 @@ All protected routes require a valid JWT token in the Authorization header.
     "isAdmin": "boolean"
   }
   ```
-- **Response:** Returns the updated Healthcare Professional details.
+- **Response:**
+  ```json
+  {
+    "status": "success",
+    "statusCode": 200,
+    "message": "Healthcare Professional {promoted/demoted} to/from admin successfully",
+    "data": {
+      "healthcareProfessional": {
+        "name": "string",
+        "email": "string",
+        "staff_id": "string",
+        "profession": "string",
+        "isAdmin": "boolean"
+      }
+    }
+  }
+  ```
 
 ### Remove Healthcare Professional
+
 - **URL:** `/api/v1/staff/hcp/:staff_id`
 - **Method:** `DELETE`
 - **Auth Required:** Yes
-- **Response:** Confirmation of Healthcare Professional removal.
+- **Response:**
+  ```json
+  {
+    "status": "success",
+    "statusCode": 200,
+    "message": "Healthcare Professional removed successfully",
+    "data": null
+  }
+  ```
 
 ### Remove Health Information Manager
+
 - **URL:** `/api/v1/staff/him/:staff_id`
 - **Method:** `DELETE`
 - **Auth Required:** Yes
-- **Response:** Confirmation of Health Information Manager removal.
+- **Response:**
+  ```json
+  {
+    "status": "success",
+    "statusCode": 200,
+    "message": "Health Information Manager removed successfully",
+    "data": null
+  }
+  ```
 
 ## Patient Management
 
 ### Register Patient
+
 - **URL:** `/api/v1/patients/register`
 - **Method:** `POST`
 - **Auth Required:** Yes
@@ -153,9 +337,39 @@ All protected routes require a valid JWT token in the Authorization header.
     "address": "string"
   }
   ```
-- **Response:** Returns the created patient's hospital record.
+- **Response:**
+  ```json
+  {
+    "status": "success",
+    "statusCode": 201,
+    "message": "Patient registered successfully",
+    "data": {
+      "hospitalRecord": {
+        "hospital_id": "string",
+        "biodata": {
+          "name": "string",
+          "age": "number",
+          "sex": "string",
+          "tribe": "string",
+          "religion": "string",
+          "occupation": "string",
+          "marital_status": "string",
+          "address": "string"
+        },
+        "appointments": [
+          {
+            "date": "string",
+            "time": "string",
+            "status": "string"
+          }
+        ]
+      }
+    }
+  }
+  ```
 
 ### Get Hospital Record
+
 - **URL:** `/api/v1/patients/hospital-records`
 - **Method:** `POST`
 - **Auth Required:** Yes
@@ -165,9 +379,43 @@ All protected routes require a valid JWT token in the Authorization header.
     "hospital_id": "string"
   }
   ```
-- **Response:** Returns the patient's hospital record.
+- **Response:**
+  ```json
+  {
+    "status": "success",
+    "statusCode": 200,
+    "message": "Hospital record retrieved successfully",
+    "data": {
+      "hospitalRecord": {
+        "hospital_id": "string",
+        "biodata": {
+          "name": "string",
+          "age": "number",
+          "sex": "string",
+          "tribe": "string",
+          "religion": "string",
+          "occupation": "string",
+          "marital_status": "string",
+          "address": "string"
+        },
+        "appointments": [
+          {
+            "date": "string",
+            "time": "string",
+            "status": "string"
+          }
+        ],
+        "assessments": ["string"],
+        "treatments": ["string"],
+        "discharges": ["string"],
+        "evaluations": ["string"]
+      }
+    }
+  }
+  ```
 
 ### Get Patient
+
 - **URL:** `/api/v1/patients`
 - **Method:** `POST`
 - **Auth Required:** Yes
@@ -177,9 +425,32 @@ All protected routes require a valid JWT token in the Authorization header.
     "hospital_id": "string"
   }
   ```
-- **Response:** Returns the patient's details.
+- **Response:**
+  ```json
+  {
+    "status": "success",
+    "statusCode": 200,
+    "message": "Patient details retrieved successfully",
+    "data": {
+      "patient": {
+        "biodata": {
+          "name": "string",
+          "age": "number",
+          "sex": "string",
+          "tribe": "string",
+          "religion": "string",
+          "occupation": "string",
+          "marital_status": "string",
+          "address": "string"
+        },
+        "hospital_record": "string"
+      }
+    }
+  }
+  ```
 
 ### Create Assessment
+
 - **URL:** `/api/v1/patients/assessment`
 - **Method:** `POST`
 - **Auth Required:** Yes
@@ -191,9 +462,30 @@ All protected routes require a valid JWT token in the Authorization header.
     "hospital_id": "string"
   }
   ```
-- **Response:** Returns the created assessment details.
+- **Response:**
+  ```json
+  {
+    "status": "success",
+    "statusCode": 201,
+    "message": "Assessment created successfully",
+    "data": {
+      "assessment": {
+        "_id": "string",
+        "template": {
+          "name": "string",
+          "profession": "string"
+        },
+        "hospital_record": "string",
+        "assessment_data": "object",
+        "createdAt": "string",
+        "updatedAt": "string"
+      }
+    }
+  }
+  ```
 
 ### Create Treatment
+
 - **URL:** `/api/v1/patients/treatment`
 - **Method:** `POST`
 - **Auth Required:** Yes
@@ -205,9 +497,30 @@ All protected routes require a valid JWT token in the Authorization header.
     "hospital_id": "string"
   }
   ```
-- **Response:** Returns the created treatment details.
+- **Response:**
+  ```json
+  {
+    "status": "success",
+    "statusCode": 201,
+    "message": "Treatment created successfully",
+    "data": {
+      "treatment": {
+        "_id": "string",
+        "template": {
+          "name": "string",
+          "profession": "string"
+        },
+        "hospital_record": "string",
+        "treatment_data": "object",
+        "createdAt": "string",
+        "updatedAt": "string"
+      }
+    }
+  }
+  ```
 
 ### Assign Patient to Healthcare Professional
+
 - **URL:** `/api/v1/patients/assign-patient`
 - **Method:** `POST`
 - **Auth Required:** Yes
@@ -218,9 +531,18 @@ All protected routes require a valid JWT token in the Authorization header.
     "staff_id": "string"
   }
   ```
-- **Response:** Confirmation of patient assignment.
+- **Response:**
+  ```json
+  {
+    "status": "success",
+    "statusCode": 200,
+    "message": "Patient assigned successfully",
+    "data": null
+  }
+  ```
 
 ### Create Discharge
+
 - **URL:** `/api/v1/patients/discharge`
 - **Method:** `POST`
 - **Auth Required:** Yes
@@ -232,9 +554,30 @@ All protected routes require a valid JWT token in the Authorization header.
     "hospital_id": "string"
   }
   ```
-- **Response:** Returns the created discharge details.
+- **Response:**
+  ```json
+  {
+    "status": "success",
+    "statusCode": 201,
+    "message": "Discharge created successfully",
+    "data": {
+      "discharge": {
+        "_id": "string",
+        "template": {
+          "name": "string",
+          "profession": "string"
+        },
+        "hospital_record": "string",
+        "discharge_data": "object",
+        "createdAt": "string",
+        "updatedAt": "string"
+      }
+    }
+  }
+  ```
 
 ### Create Evaluation
+
 - **URL:** `/api/v1/patients/evaluation`
 - **Method:** `POST`
 - **Auth Required:** Yes
@@ -246,256 +589,32 @@ All protected routes require a valid JWT token in the Authorization header.
     "hospital_id": "string"
   }
   ```
-- **Response:** Returns the created evaluation details.
-
-### Update Mortality Status
-- **URL:** `/api/v1/patients/mortality-status`
-- **Method:** `POST`
-- **Auth Required:** Yes
-- **Request Body:**
+- **Response:**
   ```json
   {
-    "hospital_id": "string",
-    "status": "boolean",
-    "date": "string",
-    "cause": "string"
+    "status": "success",
+    "statusCode": 201,
+    "message": "Evaluation created successfully",
+    "data": {
+      "evaluation": {
+        "_id": "string",
+        "template": {
+          "name": "string",
+          "profession": "string"
+        },
+        "hospital_record": "string",
+        "evaluation_data": "object",
+        "createdAt": "string",
+        "updatedAt": "string"
+      }
+    }
   }
   ```
-- **Response:** Confirmation of mortality status update.
-
-### Update Session Count
-- **URL:** `/api/v1/patients/session-count`
-- **Method:** `POST`
-- **Auth Required:** Yes
-- **Request Body:**
-  ```json
-  {
-    "hospital_id": "string",
-    "sessionCount": "number"
-  }
-  ```
-- **Response:** Confirmation of session count update.
-
-### Update Night Count
-- **URL:** `/api/v1/patients/night-count`
-- **Method:** `POST`
-- **Auth Required:** Yes
-- **Request Body:**
-  ```json
-  {
-    "hospital_id": "string",
-    "nightCount": "number"
-  }
-  ```
-- **Response:** Confirmation of night count update.
-
-## Assessment Templates
-
-### Create Assessment Template
-- **URL:** `/api/v1/assessment-template`
-- **Method:** `POST`
-- **Auth Required:** Yes
-- **Request Body:**
-  ```json
-  {
-    "name": "string",
-    "profession": "string",
-    "description": "string",
-    "fields": "object"
-  }
-  ```
-- **Response:** Returns the created assessment template.
-
-### Get Assessment Template
-- **URL:** `/api/v1/assessment-template/:id`
-- **Method:** `GET`
-- **Auth Required:** Yes
-- **Response:** Returns the specified assessment template.
-
-### Get Assessment Templates by Profession
-- **URL:** `/api/v1/assessment-template/profession/:profession`
-- **Method:** `GET`
-- **Auth Required:** Yes
-- **Response:** Returns assessment templates for the specified profession.
-
-### Get All Assessment Templates
-- **URL:** `/api/v1/assessment-template/all`
-- **Method:** `GET`
-- **Auth Required:** Yes
-- **Response:** Returns all assessment templates.
-
-### Update Assessment Template
-- **URL:** `/api/v1/assessment-template/:id`
-- **Method:** `PUT`
-- **Auth Required:** Yes
-- **Request Body:**
-  ```json
-  {
-    "name": "string",
-    "profession": "string",
-    "description": "string",
-    "fields": "object",
-    "isActive": "boolean"
-  }
-  ```
-- **Response:** Returns the updated assessment template.
-
-## Discharge Templates
-
-### Create Discharge Template
-- **URL:** `/api/discharge-templates`
-- **Method:** `POST`
-- **Auth Required:** Yes
-- **Request Body:**
-  ```json
-  {
-    "name": "string",
-    "profession": "string",
-    "description": "string",
-    "fields": "object"
-  }
-  ```
-- **Response:** Returns the created discharge template.
-
-### Get Discharge Template
-- **URL:** `/api/discharge-templates/:id`
-- **Method:** `GET`
-- **Auth Required:** Yes
-- **Response:** Returns the specified discharge template.
-
-### Get Discharge Templates by Profession
-- **URL:** `/api/discharge-templates/profession/:profession`
-- **Method:** `GET`
-- **Auth Required:** Yes
-- **Response:** Returns discharge templates for the specified profession.
-
-### Get All Discharge Templates
-- **URL:** `/api/discharge-templates`
-- **Method:** `GET`
-- **Auth Required:** Yes
-- **Response:** Returns all discharge templates.
-
-### Update Discharge Template
-- **URL:** `/api/discharge-templates/:id`
-- **Method:** `PUT`
-- **Auth Required:** Yes
-- **Request Body:**
-  ```json
-  {
-    "name": "string",
-    "profession": "string",
-    "description": "string",
-    "fields": "object",
-    "isActive": "boolean"
-  }
-  ```
-- **Response:** Returns the updated discharge template.
-
-## Evaluation Templates
-
-### Create Evaluation Template
-- **URL:** `/api/evaluation-templates`
-- **Method:** `POST`
-- **Auth Required:** Yes
-- **Request Body:**
-  ```json
-  {
-    "name": "string",
-    "profession": "string",
-    "description": "string",
-    "fields": "object"
-  }
-  ```
-- **Response:** Returns the created evaluation template.
-
-### Get Evaluation Template
-- **URL:** `/api/evaluation-templates/:id`
-- **Method:** `GET`
-- **Auth Required:** Yes
-- **Response:** Returns the specified evaluation template.
-
-### Get Evaluation Templates by Profession
-- **URL:** `/api/evaluation-templates/profession/:profession`
-- **Method:** `GET`
-- **Auth Required:** Yes
-- **Response:** Returns evaluation templates for the specified profession.
-
-### Get All Evaluation Templates
-- **URL:** `/api/evaluation-templates/all`
-- **Method:** `GET`
-- **Auth Required:** Yes
-- **Response:** Returns all evaluation templates.
-
-### Update Evaluation Template
-- **URL:** `/api/evaluation-templates/:id`
-- **Method:** `PUT`
-- **Auth Required:** Yes
-- **Request Body:**
-  ```json
-  {
-    "name": "string",
-    "profession": "string",
-    "description": "string",
-    "fields": "object",
-    "isActive": "boolean"
-  }
-  ```
-- **Response:** Returns the updated evaluation template.
-
-## Treatment Templates
-
-### Create Treatment Template
-- **URL:** `/api/treatment-templates`
-- **Method:** `POST`
-- **Auth Required:** Yes
-- **Request Body:**
-  ```json
-  {
-    "name": "string",
-    "profession": "string",
-    "description": "string",
-    "fields": "object"
-  }
-  ```
-- **Response:** Returns the created treatment template.
-
-### Get Treatment Template
-- **URL:** `/api/treatment-templates/:id`
-- **Method:** `GET`
-- **Auth Required:** Yes
-- **Response:** Returns the specified treatment template.
-
-### Get Treatment Templates by Profession
-- **URL:** `/api/treatment-templates/profession/:profession`
-- **Method:** `GET`
-- **Auth Required:** Yes
-- **Response:** Returns treatment templates for the specified profession.
-
-### Get All Treatment Templates
-- **URL:** `/api/treatment-templates`
-- **Method:** `GET`
-- **Auth Required:** Yes
-- **Response:** Returns all treatment templates.
-
-### Update Treatment Template
-- **URL:** `/api/treatment-templates/:id`
-- **Method:** `PUT`
-- **Auth Required:** Yes
-- **Request Body:**
-  ```json
-  {
-    "name": "string",
-    "profession": "string",
-    "description": "string",
-    "fields": "object",
-    "isActive": "boolean"
-  }
-  ```
-- **Response:** Returns the updated treatment template.
 
 ## Communication
 
 ### Send Message
+
 - **URL:** `/api/v1/communication/messages`
 - **Method:** `POST`
 - **Auth Required:** Yes
@@ -508,15 +627,66 @@ All protected routes require a valid JWT token in the Authorization header.
     "attachments": ["string"]
   }
   ```
-- **Response:** Returns the sent message details.
+- **Response:**
+  ```json
+  {
+    "status": "success",
+    "statusCode": 201,
+    "message": "Message sent successfully",
+    "data": {
+      "communication": {
+        "_id": "string",
+        "sender": "string",
+        "        "sender": "string",
+        "receivers": ["string"],
+        "patient": "string",
+        "message": "string",
+        "attachments": ["string"],
+        "createdAt": "string"
+      }
+    }
+  }
+  ```
 
 ### Get Messages
+
 - **URL:** `/api/v1/communication/messages/:patientId`
 - **Method:** `GET`
 - **Auth Required:** Yes
-- **Response:** Returns messages related to the specified patient.
+- **Response:**
+  ```json
+  {
+    "status": "success",
+    "statusCode": 200,
+    "message": "Messages retrieved successfully",
+    "data": {
+      "messages": [
+        {
+          "_id": "string",
+          "sender": {
+            "_id": "string",
+            "name": "string",
+            "profession": "string"
+          },
+          "receivers": [
+            {
+              "_id": "string",
+              "name": "string",
+              "profession": "string"
+            }
+          ],
+          "patient": "string",
+          "message": "string",
+          "attachments": ["string"],
+          "createdAt": "string"
+        }
+      ]
+    }
+  }
+  ```
 
 ### Create Service Request
+
 - **URL:** `/api/v1/communication/service-requests`
 - **Method:** `POST`
 - **Auth Required:** Yes
@@ -528,17 +698,71 @@ All protected routes require a valid JWT token in the Authorization header.
     "description": "string"
   }
   ```
-- **Response:** Returns the created service request details.
+- **Response:**
+  ```json
+  {
+    "status": "success",
+    "statusCode": 201,
+    "message": "Service request created successfully",
+    "data": {
+      "serviceRequest": {
+        "_id": "string",
+        "requester": "string",
+        "targetProfession": "string",
+        "patient": "string",
+        "description": "string",
+        "status": "string",
+        "createdAt": "string",
+        "updatedAt": "string"
+      }
+    }
+  }
+  ```
 
 ### Get Service Requests
+
 - **URL:** `/api/v1/communication/service-requests`
 - **Method:** `GET`
 - **Auth Required:** Yes
 - **Query Parameters:**
   - `status`: string (optional)
-- **Response:** Returns service requests based on the user's role and query parameters.
+- **Response:**
+  ```json
+  {
+    "status": "success",
+    "statusCode": 200,
+    "message": "Service requests retrieved successfully",
+    "data": {
+      "serviceRequests": [
+        {
+          "_id": "string",
+          "requester": {
+            "_id": "string",
+            "name": "string",
+            "profession": "string"
+          },
+          "targetProfession": "string",
+          "patient": {
+            "_id": "string",
+            "name": "string"
+          },
+          "description": "string",
+          "status": "string",
+          "assignedTo": {
+            "_id": "string",
+            "name": "string",
+            "profession": "string"
+          },
+          "createdAt": "string",
+          "updatedAt": "string"
+        }
+      ]
+    }
+  }
+  ```
 
 ### Update Service Request
+
 - **URL:** `/api/v1/communication/service-requests/:requestId`
 - **Method:** `PATCH`
 - **Auth Required:** Yes
@@ -549,4 +773,26 @@ All protected routes require a valid JWT token in the Authorization header.
     "assignedTo": "string"
   }
   ```
-- **Response:** Returns the updated service request details.
+- **Response:**
+  ```json
+  {
+    "status": "success",
+    "statusCode": 200,
+    "message": "Service request updated successfully",
+    "data": {
+      "serviceRequest": {
+        "_id": "string",
+        "requester": "string",
+        "targetProfession": "string",
+        "patient": "string",
+        "description": "string",
+        "status": "string",
+        "assignedTo": "string",
+        "createdAt": "string",
+        "updatedAt": "string"
+      }
+    }
+  }
+  ```
+
+This completes the API documentation with sample response structures for each endpoint.
