@@ -1,8 +1,8 @@
-const AssessmentTemplate = require("../models/AssessmentTemplate");
+const EvaluationTemplate = require("../models/EvaluationTemplate");
 const { StatusCodes } = require("http-status-codes");
 const { errorHandler, successHandler, paginateResults } = require("../utils/utils");
 
-const createAssessmentTemplate = async (req, res) => {
+const createEvaluationTemplate = async (req, res) => {
   try {
     const { name, profession, description, fields } = req.body;
 
@@ -26,7 +26,7 @@ const createAssessmentTemplate = async (req, res) => {
       });
     }
 
-    const template = new AssessmentTemplate({
+    const template = new EvaluationTemplate({
       name,
       profession,
       description,
@@ -39,7 +39,7 @@ const createAssessmentTemplate = async (req, res) => {
       res,
       StatusCodes.CREATED,
       template,
-      "Assessment template was created successfully"
+      "Evaluation template was created successfully"
     );
   } catch (error) {
     console.error(error);
@@ -47,44 +47,44 @@ const createAssessmentTemplate = async (req, res) => {
   }
 };
 
-const getAssessmentTemplate = async (req, res) => {
+const getEvaluationTemplate = async (req, res) => {
   const { id } = req.params;
   if (!id) {
     return errorHandler(res, StatusCodes.BAD_REQUEST, "No ID provided");
   }
   try {
-    const assessmentTemplate = await AssessmentTemplate.findById(id);
-    res.status(StatusCodes.OK).json({ assessmentTemplate });
+    const evaluationTemplate = await EvaluationTemplate.findById(id);
+    res.status(StatusCodes.OK).json({ evaluationTemplate });
   } catch (error) {
     errorHandler(res, StatusCodes.INTERNAL_SERVER_ERROR, error.message);
   }
 };
 
-const getAssessmentTemplatesByProfession = async (req, res) => {
+const getEvaluationTemplatesByProfession = async (req, res) => {
   const { profession } = req.params;
 
   try {
-    const assessmentTemplates = await AssessmentTemplate.find({ profession });
+    const evaluationTemplates = await EvaluationTemplate.find({ profession });
 
-    if (assessmentTemplates.length === 0) {
+    if (evaluationTemplates.length === 0) {
       return res.status(StatusCodes.NOT_FOUND).json({
-        message: "No assessment templates found for this profession",
+        message: "No evaluation templates found for this profession",
       });
     }
 
-    res.status(StatusCodes.OK).json({ assessmentTemplates });
+    res.status(StatusCodes.OK).json({ evaluationTemplates });
   } catch (error) {
     errorHandler(res, StatusCodes.INTERNAL_SERVER_ERROR, error.message);
   }
 };
 
-const getAllAssessmentTemplates = async (req, res) => {
+const getAllEvaluationTemplates = async (req, res) => {
   try {
     const { page, limit } = req.query;
     const { pageNumber, pageSize, skip } = paginateResults(page, limit);
 
-    const totalTemplates = await AssessmentTemplate.countDocuments();
-    const assessmentTemplates = await AssessmentTemplate.find()
+    const totalTemplates = await EvaluationTemplate.countDocuments();
+    const evaluationTemplates = await EvaluationTemplate.find()
       .skip(skip)
       .limit(pageSize);
 
@@ -94,30 +94,30 @@ const getAllAssessmentTemplates = async (req, res) => {
       res,
       StatusCodes.OK,
       {
-        assessmentTemplates,
+        evaluationTemplates,
         currentPage: pageNumber,
         totalPages,
         totalTemplates,
       },
-      "Assessment templates retrieved successfully"
+      "Evaluation templates retrieved successfully"
     );
   } catch (error) {
     errorHandler(res, StatusCodes.INTERNAL_SERVER_ERROR, error.message);
   }
 };
 
-const updateAssessmentTemplate = async (req, res) => {
+const updateEvaluationTemplate = async (req, res) => {
   try {
     const { id } = req.params;
     const { name, profession, description, fields, isActive } = req.body;
 
-    const existingTemplate = await AssessmentTemplate.findById(id);
+    const existingTemplate = await EvaluationTemplate.findById(id);
 
     if (!existingTemplate) {
       return errorHandler(
         res,
         StatusCodes.NOT_FOUND,
-        "Assessment template not found"
+        "Evaluation template not found"
       );
     }
 
@@ -151,7 +151,7 @@ const updateAssessmentTemplate = async (req, res) => {
       res,
       StatusCodes.OK,
       existingTemplate,
-      "Assessment template updated successfully"
+      "Evaluation template updated successfully"
     );
   } catch (error) {
     console.error(error);
@@ -160,9 +160,9 @@ const updateAssessmentTemplate = async (req, res) => {
 };
 
 module.exports = {
-	createAssessmentTemplate,
-	getAssessmentTemplate,
-	getAssessmentTemplatesByProfession,
-	getAllAssessmentTemplates,
-	updateAssessmentTemplate,
-}
+  createEvaluationTemplate,
+  getEvaluationTemplate,
+  getEvaluationTemplatesByProfession,
+  getAllEvaluationTemplates,
+  updateEvaluationTemplate,
+};

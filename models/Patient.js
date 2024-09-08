@@ -35,7 +35,25 @@ const patientSchema = new mongoose.Schema({
 			ref: 'Treatment',
 		},
 	],
+
+	discharges: [
+		{
+			type: mongoose.Schema.Types.ObjectId,
+			ref: 'Discharge',
+		},
+	],
+
+	evaluations: [
+		{
+			type: mongoose.Schema.Types.ObjectId,
+			ref: 'Evaluation',
+		},
+	],
 });
+
+// Add indexes
+patientSchema.index({ hospital_record: 1 });
+patientSchema.index({ biodata: 1 });
 
 const Patient = mongoose.model('Patient', patientSchema);
 

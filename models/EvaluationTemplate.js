@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
 const evaluationTemplateSchema = new mongoose.Schema(
   {
@@ -22,7 +22,7 @@ const evaluationTemplateSchema = new mongoose.Schema(
         {
           type: {
             type: String,
-            enum: ['String', 'Number', 'Boolean', 'Array', 'Date', 'Object'],
+            enum: ["String", "Number", "Boolean", "Array", "Date", "Object"],
             required: true,
           },
           required: {
@@ -52,8 +52,15 @@ const evaluationTemplateSchema = new mongoose.Schema(
 evaluationTemplateSchema.index({ name: 1, profession: 1 }, { unique: true });
 
 // Text index for improved search capabilities
-evaluationTemplateSchema.index({ name: 'text', description: 'text' });
+evaluationTemplateSchema.index({ name: "text", description: "text" });
 
-const EvaluationTemplate = mongoose.model('EvaluationTemplate', evaluationTemplateSchema);
+// Additional indexes as suggested
+evaluationTemplateSchema.index({ profession: 1 });
+evaluationTemplateSchema.index({ isActive: 1 });
+
+const EvaluationTemplate = mongoose.model(
+  "EvaluationTemplate",
+  evaluationTemplateSchema
+);
 
 module.exports = EvaluationTemplate;

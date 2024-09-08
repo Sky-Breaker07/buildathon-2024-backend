@@ -70,6 +70,10 @@ assessmentTemplateSchema.index({ name: 1, profession: 1 }, { unique: true });
 // Text index for improved search capabilities
 assessmentTemplateSchema.index({ name: 'text', description: 'text' });
 
+// Additional indexes
+assessmentTemplateSchema.index({ profession: 1 });
+assessmentTemplateSchema.index({ isActive: 1 });
+
 const AssessmentTemplate = mongoose.model(
 	'AssessmentTemplate',
 	assessmentTemplateSchema

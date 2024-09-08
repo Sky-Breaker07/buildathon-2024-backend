@@ -1,10 +1,10 @@
 const mongoose = require('mongoose');
 
-const treatmentSchema = new mongoose.Schema(
+const dischargeSchema = new mongoose.Schema(
   {
     template: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'TreatmentTemplate',
+      ref: 'DischargeTemplate',
       required: true,
     },
 
@@ -14,7 +14,7 @@ const treatmentSchema = new mongoose.Schema(
       required: true,
     },
 
-    treatment_data: {
+    discharge_data: {
       type: Map,
       of: mongoose.Schema.Types.Mixed,
     },
@@ -23,10 +23,10 @@ const treatmentSchema = new mongoose.Schema(
 );
 
 // Add indexes
-treatmentSchema.index({ template: 1 });
-treatmentSchema.index({ hospital_record: 1 });
-treatmentSchema.index({ createdAt: -1 });
+dischargeSchema.index({ template: 1 });
+dischargeSchema.index({ hospital_record: 1 });
+dischargeSchema.index({ createdAt: -1 });
 
-const Treatment = mongoose.model('Treatment', treatmentSchema);
+const Discharge = mongoose.model('Discharge', dischargeSchema);
 
-module.exports = Treatment;
+module.exports = Discharge;

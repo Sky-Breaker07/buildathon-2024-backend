@@ -52,7 +52,25 @@ const hospitalRecordSchema = new mongoose.Schema({
     type: Number,
     default: null,
   },
+  mortality: {
+    status: {
+      type: Boolean,
+      default: false,
+    },
+    date: {
+      type: Date,
+      default: null,
+    },
+    cause: {
+      type: String,
+      default: null,
+    },
+  },
 });
+
+// Add indexes
+hospitalRecordSchema.index({ hospital_id: 1 }, { unique: true });
+hospitalRecordSchema.index({ patient_id: 1 });
 
 hospitalRecordSchema.pre("save", async function (next) {
   if (!this.hospital_id) {

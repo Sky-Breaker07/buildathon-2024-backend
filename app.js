@@ -11,6 +11,8 @@ const patientRouter = require("./router/Patient");
 const assessmentTemplateRouter = require("./router/AssessmentTemplate");
 const staffRouter = require("./routes/staff");
 const communicationRouter = require('./routes/communication');
+const dischargeTemplateRouter = require('./router/DischargeTemplate');
+const evaluationTemplateRouter = require('./router/EvaluationTemplate');
 
 // App Setup
 const app = express();
@@ -23,6 +25,8 @@ app.use("/api/v1/patients", patientRouter);
 app.use("/api/v1/assessment-template", assessmentTemplateRouter);
 app.use("/api/v1/staff", staffRouter);
 app.use('/api/v1/communication', communicationRouter);
+app.use('/api/discharge-templates', dischargeTemplateRouter);
+app.use('/api/evaluation-templates', evaluationTemplateRouter);
 
 const startServer = async () => {
   try {

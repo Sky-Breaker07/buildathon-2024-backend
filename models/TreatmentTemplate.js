@@ -47,8 +47,9 @@ const treatmentTemplateSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 treatmentTemplateSchema.index({ name: 1, profession: 1 }, { unique: true });
-
+treatmentTemplateSchema.index({ profession: 1 });
 treatmentTemplateSchema.index({ name: 'text', description: 'text' });
+treatmentTemplateSchema.index({ isActive: 1 });
 
 const TreatmentTemplate = mongoose.model('TreatmentTemplate', treatmentTemplateSchema);
 

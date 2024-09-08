@@ -22,6 +22,11 @@ const assessmentSchema = new mongoose.Schema(
 	{ timestamps: true }
 );
 
+// Add indexes
+assessmentSchema.index({ template: 1 });
+assessmentSchema.index({ hospital_record: 1 });
+assessmentSchema.index({ createdAt: -1 });
+
 const Assessment = mongoose.model('Assessment', assessmentSchema);
 
 module.exports = Assessment;

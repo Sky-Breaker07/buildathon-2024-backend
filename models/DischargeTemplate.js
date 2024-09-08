@@ -54,6 +54,10 @@ dischargeTemplateSchema.index({ name: 1, profession: 1 }, { unique: true });
 // Text index for improved search capabilities
 dischargeTemplateSchema.index({ name: 'text', description: 'text' });
 
+// Additional indexes
+dischargeTemplateSchema.index({ profession: 1 });
+dischargeTemplateSchema.index({ isActive: 1 });
+
 const DischargeTemplate = mongoose.model('DischargeTemplate', dischargeTemplateSchema);
 
 module.exports = DischargeTemplate;
