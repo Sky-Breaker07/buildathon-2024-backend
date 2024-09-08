@@ -9,7 +9,8 @@ const {
 	createEvaluationController,
 	updateMortalityStatus,
 	updateSessionCount,
-	updateNightCount
+	updateNightCount,
+	updatePatientInfo
 } = require('../controllers/Patient');
 
 const router = require('express').Router();
@@ -25,6 +26,7 @@ router.route('/evaluation').post(createEvaluationController);
 router.route('/mortality-status').post(updateMortalityStatus);
 router.route('/session-count').post(updateSessionCount);
 router.route('/night-count').post(updateNightCount);
+router.route('/update-patient-info').post(updatePatientInfo);
 
 
 module.exports = router;

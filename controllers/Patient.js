@@ -490,6 +490,64 @@ const getAllPatients = async (req, res) => {
   }
 };
 
+const updatePatientInfo = async (req, res) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    const { hospital_id, biodata, hospitalRecord } = req.body;
+
+    if (!hospital_id) {
+      return errorHandler(
+        res,
+        StatusCodes.BAD_REQUEST,
+        "Hospital ID is required."
+      );
+    }
+
+    const patient = await Patient.findOne({ hospital_record: hospital_id }).session(session);
+
+    if (!patient) {
+      await session.abortTransaction();
+      session.endSession();
+      return errorHandler(res, StatusCodes.NOT_FOUND, "Patient not found.");
+    }
+
+    // Update biodata if provided
+    if (biodata && Object.keys(biodata).length > 0) {
+      await patient.biodata.updateOne(biodata, { session });
+    }
+
+    // Update hospital record if provided
+    if (hospitalRecord && Object.keys(hospitalRecord).length > 0) {
+      await HospitalRecord.findOneAndUpdate(
+        { hospital_id },
+        hospitalRecord,
+        { new: true, session }
+      );
+    }
+
+    await session.commitTransaction();
+    session.endSession();
+
+    const updatedPatient = await Patient.findOne({ hospital_record: hospital_id })
+      .populate('biodata')
+      .populate('hospital_record');
+
+    successHandler(
+      res,
+      StatusCodes.OK,
+      updatedPatient,
+      "Patient information updated successfully."
+    );
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+    console.error(error);
+    errorHandler(res, StatusCodes.INTERNAL_SERVER_ERROR, "Server Error.");
+  }
+};
+
 module.exports = {
   registerPatientController,
   getHospitalRecordController,
@@ -503,4 +561,5 @@ module.exports = {
   createDischargeController,
   createEvaluationController,
   getAllPatients,
+  updatePatientInfo,
 };

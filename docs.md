@@ -611,6 +611,59 @@ All protected routes require a valid JWT token in the Authorization header.
   }
   ```
 
+### Update Patient Information
+
+- **URL:** `/api/v1/patients/update-patient-info`
+- **Method:** `PUT`
+- **Auth Required:** Yes
+- **Request Body:**
+  ```json
+  {
+    "hospital_id": "string",
+    "biodata": {
+      "name": "string",
+      "age": "number",
+      "sex": "string",
+      "tribe": "string",
+      "religion": "string",
+      "occupation": "string",
+      "marital_status": "string",
+      "address": "string"
+    },
+    "hospitalRecord": {
+      "field1": "value1",
+      "field2": "value2"
+      // Any fields from the HospitalRecord model that need to be updated
+    }
+  }
+  ```
+- **Response:**
+  ```json
+  {
+    "status": "success",
+    "statusCode": 200,
+    "message": "Patient information updated successfully",
+    "data": {
+      "patient": {
+        "biodata": {
+          "name": "string",
+          "age": "number",
+          "sex": "string",
+          "tribe": "string",
+          "religion": "string",
+          "occupation": "string",
+          "marital_status": "string",
+          "address": "string"
+        },
+        "hospital_record": {
+          "hospital_id": "string",
+          // Other updated fields from the HospitalRecord
+        }
+      }
+    }
+  }
+  ```
+
 ## Communication
 
 ### Send Message
