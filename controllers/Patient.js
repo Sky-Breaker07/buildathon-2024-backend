@@ -1,6 +1,7 @@
 const {
 	createAssessment
 } = require('./Assessment');
+const HealthCareProfessional = require('../models/HealthCareProfessional');
 
 const {registerPatient, getHospitalRecord, getPatient} = require('./utils');
 const mongoose = require('mongoose');
@@ -191,10 +192,53 @@ const createTreatmentController = async (req, res) => {
 	}
 };
 
+const assignPatientToHealthcareProfessional = async (req, res) => {
+	try {
+	  const { staffId, patientId } = req.body;
+	  const adminId = req.staff.staff_id;
+	
+	  const admin = await HealthCareProfessional.findOne({ staff_id: adminId });
+	  if (!admin || !admin.isAdmin) {
+		return errorHandler(res, StatusCodes.FORBIDDEN, 'Only admins can assign patients');
+	  }
+	
+	  const hcp = await HealthCareProfessional.findOne({ staff_id: staffId });
+	  if (!hcp) {
+		return errorHandler(res, StatusCodes.NOT_FOUND, 'Healthcare professional not found');
+	  }
+	
+	  // Check if the admin and the healthcare professional are of the same profession
+	  if (admin.profession !== hcp.profession) {
+		return errorHandler(res, StatusCodes.FORBIDDEN, 'You can only assign patients to professionals in your own profession');
+	  }
+	
+	  const patient = await Patient.findById(patientId);
+	  if (!patient) {
+		return errorHandler(res, StatusCodes.NOT_FOUND, 'Patient not found');
+	  }
+	
+	  if (!hcp.patientsAssigned.includes(patient.hospital_record)) {
+		hcp.patientsAssigned.push(patient.hospital_record);
+		await hcp.save();
+	  }
+	
+	  successHandler(
+		res,
+		StatusCodes.OK,
+		hcp,
+		'Patient assigned successfully'
+	  );
+	} catch (error) {
+	  console.error(error);
+	  errorHandler(res, StatusCodes.INTERNAL_SERVER_ERROR, 'Failed to assign patient');
+	}
+  };
+
 module.exports = {
 	registerPatientController,
 	getHospitalRecordController,
 	getPatientController,
 	createAssessmentController,
 	createTreatmentController,
+	assignPatientToHealthcareProfessional
 };

@@ -3,7 +3,8 @@ const {
 	getHospitalRecordController,
 	getPatientController,
 	createAssessmentController,
-	createTreatmentController
+	createTreatmentController,
+	assignPatientToHealthcareProfessional
 } = require('../controllers/Patient');
 
 const router = require('express').Router();
@@ -13,5 +14,6 @@ router.route('/hospital-records').post(getHospitalRecordController);
 router.route('/').post(getPatientController);
 router.route('/assessment').post(createAssessmentController);
 router.route('/treatment').post(createTreatmentController);
+router.route('/assign-patient').post(assignPatientToHealthcareProfessional);
 
 module.exports = router;

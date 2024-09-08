@@ -10,6 +10,7 @@ const connectDB = require("./db/conn");
 const patientRouter = require("./router/Patient");
 const assessmentTemplateRouter = require("./router/AssessmentTemplate");
 const staffRouter = require("./routes/staff");
+const communicationRouter = require('./routes/communication');
 
 // App Setup
 const app = express();
@@ -21,6 +22,7 @@ app.use(express.json());
 app.use("/api/v1/patients", patientRouter);
 app.use("/api/v1/assessment-template", assessmentTemplateRouter);
 app.use("/api/v1/staff", staffRouter);
+app.use('/api/v1/communication', communicationRouter);
 
 const startServer = async () => {
   try {

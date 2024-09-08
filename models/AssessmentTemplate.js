@@ -5,11 +5,18 @@ const assessmentTemplateSchema = new mongoose.Schema(
 		name: {
 			type: String,
 			required: true,
+			trim: true,
 		},
 
 		profession: {
 			type: String,
 			required: true,
+			trim: true,
+		},
+
+		description: {
+			type: String,
+			trim: true,
 		},
 
 		fields: {
@@ -35,15 +42,33 @@ const assessmentTemplateSchema = new mongoose.Schema(
 					},
 
 					options: [String],
+
+					label: {
+						type: String,
+						required: true,
+					},
+
+					placeholder: String,
+
+					defaultValue: mongoose.Schema.Types.Mixed,
 				},
 				{ _id: false }
 			),
+		},
+
+		isActive: {
+			type: Boolean,
+			default: true,
 		},
 	},
 	{ timestamps: true }
 );
 
+// Compound index for name and profession
 assessmentTemplateSchema.index({ name: 1, profession: 1 }, { unique: true });
+
+// Text index for improved search capabilities
+assessmentTemplateSchema.index({ name: 'text', description: 'text' });
 
 const AssessmentTemplate = mongoose.model(
 	'AssessmentTemplate',

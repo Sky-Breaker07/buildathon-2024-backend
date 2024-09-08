@@ -11,13 +11,17 @@ const treatmentTemplateSchema = new mongoose.Schema({
     required: true,
     trim: true,
   },
+  description: {
+    type: String,
+    trim: true,
+  },
   fields: {
     type: Map,
     of: new mongoose.Schema({
       type: {
         type: String,
+        enum: ['String', 'Number', 'Boolean', 'Array', 'Date', 'Object'],
         required: true,
-        enum: ['text', 'number', 'boolean', 'select'],
       },
       required: {
         type: Boolean,
@@ -27,13 +31,24 @@ const treatmentTemplateSchema = new mongoose.Schema({
         type: [String],
         default: [],
       },
+      label: {
+        type: String,
+        required: true,
+      },
+      placeholder: String,
+      defaultValue: mongoose.Schema.Types.Mixed,
     }),
     required: true,
+  },
+  isActive: {
+    type: Boolean,
+    default: true,
   },
 }, { timestamps: true });
 
 treatmentTemplateSchema.index({ name: 1, profession: 1 }, { unique: true });
 
+treatmentTemplateSchema.index({ name: 'text', description: 'text' });
 
 const TreatmentTemplate = mongoose.model('TreatmentTemplate', treatmentTemplateSchema);
 

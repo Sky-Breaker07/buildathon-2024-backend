@@ -30,7 +30,7 @@ const healthCareProfessionalSchema = new mongoose.Schema({
     {
       type: mongoose.Schema.Types.ObjectId,
       ref: "HospitalRecord",
-    },
+    }
   ],
   password: {
     type: String,
