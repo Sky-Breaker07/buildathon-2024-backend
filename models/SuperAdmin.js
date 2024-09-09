@@ -82,16 +82,20 @@ superAdminSchema.pre("save", async function (next) {
     );
   };
   
-  healthCareProfessionalSchema.methods.comparePassword = async function (
+  superAdminSchema.methods.comparePassword = async function (
     password
   ) {
     const isMatch = await bcrypt.compare(password, this.password);
     return isMatch;
   };
   
-  healthCareProfessionalSchema.methods.compareSecurity = async function (
+  superAdminSchema.methods.compareSecurity = async function (
     securityAnswer
   ) {
     const isMatch = await bcrypt.compare(securityAnswer, this.securityAnswer);
     return isMatch;
   };
+
+  const SuperAdmin = mongoose.model('SuperAdmin', superAdminSchema);
+
+  module.exports = SuperAdmin;

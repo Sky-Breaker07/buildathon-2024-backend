@@ -6,7 +6,7 @@ const {
   createServiceRequest,
   getServiceRequests,
   updateServiceRequest
-} = require('../controllers/CommunicationController');
+} = require('../controllers/Communication');
 const authenticateStaff = require('../middleware/authentication');
 
 router.use(authenticateStaff);

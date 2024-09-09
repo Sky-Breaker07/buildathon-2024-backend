@@ -9,8 +9,8 @@ const cors = require("cors");
 const connectDB = require("./db/conn");
 const patientRouter = require("./router/Patient");
 const assessmentTemplateRouter = require("./router/AssessmentTemplate");
-const staffRouter = require("./routes/staff");
-const communicationRouter = require('./routes/communication');
+const staffRouter = require("./router/staff");
+const communicationRouter = require('./router/communication');
 const dischargeTemplateRouter = require('./router/DischargeTemplate');
 const evaluationTemplateRouter = require('./router/EvaluationTemplate');
 
