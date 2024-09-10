@@ -13,6 +13,7 @@ const staffRouter = require("./router/staff");
 const communicationRouter = require('./router/communication');
 const dischargeTemplateRouter = require('./router/DischargeTemplate');
 const evaluationTemplateRouter = require('./router/EvaluationTemplate');
+const authRouter = require('./router/auth');
 
 // App Setup
 const app = express();
@@ -27,16 +28,25 @@ app.use("/api/v1/staff", staffRouter);
 app.use('/api/v1/communication', communicationRouter);
 app.use('/api/discharge-templates', dischargeTemplateRouter);
 app.use('/api/evaluation-templates', evaluationTemplateRouter);
+app.use('/api/v1/auth', authRouter);
 
-const startServer = async () => {
+const startConnection = async () => {
   try {
-    await connectDB(process.env.MONGO_URL);
-    app.listen(PORT, () =>
-      console.log(`Server started successfully on port: ${PORT}`)
-    );
+    const isConnectionSuccessful = await connectDB(process.env.MONGO_URI);
+
+    if (isConnectionSuccessful) {
+      app.listen(
+        PORT,
+        console.log(
+          `Connection to the Database Successful. Server is listening on port ${PORT}`
+        )
+      );
+    } else {
+      console.log("Connection Failed");
+    }
   } catch (error) {
-    console.error("Error starting server: ", error);
+    console.log(error);
   }
 };
 
-startServer();
+startConnection();
