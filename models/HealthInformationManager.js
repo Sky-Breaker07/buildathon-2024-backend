@@ -20,7 +20,7 @@ const healthInformationManagerSchema = new mongoose.Schema({
     },
     superadmin_id: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Admin',
+        ref: 'SuperAdmin',
         required: true,
     },
     password: {
@@ -29,11 +29,11 @@ const healthInformationManagerSchema = new mongoose.Schema({
     },
     securityAnswer: {
         type: String,
-        required: true,
+        required: false,
     },
     securityQuestion: {
         type: String,
-        required: true,
+        required: false,
     },
     registeredBy: {
       type: String,
@@ -43,13 +43,13 @@ const healthInformationManagerSchema = new mongoose.Schema({
 
 
     healthInformationManagerSchema.pre("save", async function (next) {
-        if (this.isModified("password")) {
-          const salt = await bcrypt.genSalt(10);
-          this.password = await bcrypt.hash(this.password, salt);
+        if (this.isModified("password") && this.password) {
+            const salt = await bcrypt.genSalt(10);
+            this.password = await bcrypt.hash(this.password, salt);
         }
-        if (this.isModified("securityAnswer")) {
-          const salt = await bcrypt.genSalt(10);
-          this.securityAnswer = await bcrypt.hash(this.securityAnswer, salt);
+        if (this.isModified("securityAnswer") && this.securityAnswer) {
+            const salt = await bcrypt.genSalt(10);
+            this.securityAnswer = await bcrypt.hash(this.securityAnswer, salt);
         }
         next();
       });
@@ -92,7 +92,13 @@ const healthInformationManagerSchema = new mongoose.Schema({
         return isMatch;
       };
       
-
+      healthInformationManagerSchema.methods.generateStaffId = async function() {
+        if (!this.staff_id) {
+          const latestRecord = await this.constructor.findOne().sort('-staff_id');
+          const lastId = latestRecord ? parseInt(latestRecord.staff_id.slice(3)) : 0;
+          this.staff_id = `HIM${(lastId + 1).toString().padStart(6, '0')}`;
+        }
+      };
 
 const HealthInformationManager = mongoose.model('HealthInformationManager', healthInformationManagerSchema);
 

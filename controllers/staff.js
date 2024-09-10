@@ -6,8 +6,12 @@ const Archive = require("../models/Archive");
 const { StatusCodes } = require("http-status-codes");
 const { errorHandler, successHandler } = require("../utils/utils");
 const jwt = require("jsonwebtoken");
+const mongoose = require("mongoose");
 
 const registerSuperAdmin = async (req, res) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
   try {
     const {
       firstName,
@@ -22,13 +26,18 @@ const registerSuperAdmin = async (req, res) => {
       organizationDescription,
     } = req.body;
 
-    const organization = await Organization.create({
+    // Create organization
+    const organization = new Organization({
       name: organizationName,
       address: organizationAddress,
       description: organizationDescription,
     });
 
-    const superAdmin = await SuperAdmin.create({
+    await organization.validate();
+    const savedOrganization = await organization.save({ session });
+
+    // Create super admin
+    const superAdmin = new SuperAdmin({
       firstName,
       lastName,
       email,
@@ -37,6 +46,9 @@ const registerSuperAdmin = async (req, res) => {
       securityQuestion,
       securityAnswer,
     });
+
+    await superAdmin.validate(); // Explicitly validate SuperAdmin
+    const savedSuperAdmin = await superAdmin.save({ session });
 
     const token = superAdmin.createJWT();
 
@@ -60,9 +72,14 @@ const registerSuperAdmin = async (req, res) => {
       responseData,
       "Super Admin registered successfully"
     );
+
+    await session.commitTransaction();
+    session.endSession();
   } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
     console.error(error);
-    errorHandler(res, StatusCodes.INTERNAL_SERVER_ERROR, "Registration failed");
+    return errorHandler(res, StatusCodes.INTERNAL_SERVER_ERROR, error.message);
   }
 };
 
@@ -75,20 +92,29 @@ const registerAdminHealthcareProfessional = async (req, res) => {
       profession,
       securityQuestion,
       securityAnswer,
+      password, // Add password to the destructured request body
     } = req.body;
 
-    const { staff_id } = req.staff;
-    const password = lastName;
-    const adminHCP = await HealthCareProfessional.create({
+    const { staff_id: registeredBy } = req.staff;
+    console.log('Registered by:', registeredBy);
+
+    // Create the adminHCP without saving it to the database yet
+    const adminHCP = new HealthCareProfessional({
       name: `${firstName} ${lastName}`,
       email,
       profession,
       securityQuestion,
       securityAnswer,
-      password,
+      password: password || lastName, // Use provided password or lastName as default
       isAdmin: true,
-      registeredBy: staff_id,
+      registeredBy,
     });
+
+    // Generate the staff_id
+    await adminHCP.generateStaffId();
+
+    // Now save the document to the database
+    await adminHCP.save();
 
     const adminHCPResponse = {
       name: adminHCP.name,
@@ -166,21 +192,38 @@ const registerHealthcareProfessional = async (req, res) => {
 
 const registerHealthInformationManager = async (req, res) => {
   try {
-    const { firstName, lastName, email, securityQuestion, securityAnswer } =
-      req.body;
+    const { firstName, lastName, email, securityQuestion, securityAnswer, password } = req.body;
 
-    const { staff_id } = req.staff;
-    const password = lastName;
+    const { staff_id: registeredBy } = req.staff;
+    console.log('Registered by:', registeredBy);
 
-    const him = await HealthInformationManager.create({
+    // Fetch the SuperAdmin document
+    const superAdmin = await SuperAdmin.findOne({ staff_id: registeredBy });
+    if (!superAdmin) {
+      return errorHandler(
+        res,
+        StatusCodes.NOT_FOUND,
+        "SuperAdmin not found"
+      );
+    }
+
+    // Create the HIM without saving it to the database yet
+    const him = new HealthInformationManager({
       firstName,
       lastName,
       email,
       securityQuestion,
-      securityAnswer,
-      password,
-      registeredBy: staff_id,
+      securityAnswer: securityAnswer || undefined, // Only set if provided
+      password: password || lastName, // Use provided password or lastName as default
+      registeredBy,
+      superadmin_id: superAdmin._id, // Use the _id of the fetched SuperAdmin
     });
+
+    // Generate the staff_id
+    await him.generateStaffId();
+
+    // Now save the document to the database
+    await him.save();
 
     const himResponse = {
       firstName: him.firstName,

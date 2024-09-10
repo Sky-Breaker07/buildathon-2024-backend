@@ -46,41 +46,42 @@ const healthCareProfessionalSchema = new mongoose.Schema({
   },
 });
 
-healthCareProfessionalSchema.pre('save', async function (next) {
-	const latestRecord = await this.constructor.findOne().sort('-staff_id');
-	const lastId = latestRecord ? parseInt(latestRecord.staff_id.slice(3)) : 0;
-	this.staff_id = `HCP${(lastId + 1).toString().padStart(6, '0')}`;
-	next();
-});
+healthCareProfessionalSchema.methods.generateStaffId = async function() {
+  if (!this.staff_id) {
+    const latestRecord = await this.constructor.findOne().sort('-staff_id');
+    const lastId = latestRecord ? parseInt(latestRecord.staff_id.slice(3)) : 0;
+    this.staff_id = `HCP${(lastId + 1).toString().padStart(6, '0')}`;
+  }
+};
 
 healthCareProfessionalSchema.pre('save', async function (next) {
-	if (this.isModified('password')) {
-		const salt = await bcrypt.genSalt(10);
-		this.password = await bcrypt.hash(this.password, salt);
-	}
-	if (this.isModified('securityAnswer')) {
-		const salt = await bcrypt.genSalt(10);
-		this.securityAnswer = await bcrypt.hash(this.securityAnswer, salt);
-	}
-	next();
+  if (this.isModified('password') && this.password) {
+    const salt = await bcrypt.genSalt(10);
+    this.password = await bcrypt.hash(this.password, salt);
+  }
+  if (this.isModified('securityAnswer') && this.securityAnswer) {
+    const salt = await bcrypt.genSalt(10);
+    this.securityAnswer = await bcrypt.hash(this.securityAnswer, salt);
+  }
+  next();
 });
 
 healthCareProfessionalSchema.pre('findOneAndUpdate', async function (next) {
-	if (this.getUpdate().password) {
-		const salt = await bcrypt.genSalt(10);
-		this.getUpdate().password = await bcrypt.hash(
-			this.getUpdate().password,
-			salt
-		);
-	}
-	if (this.getUpdate().securityAnswer) {
-		const salt = await bcrypt.genSalt(10);
-		this.getUpdate().securityAnswer = await bcrypt.hash(
-			this.getUpdate().securityAnswer,
-			salt
-		);
-	}
-	next();
+  if (this.getUpdate().password) {
+    const salt = await bcrypt.genSalt(10);
+    this.getUpdate().password = await bcrypt.hash(
+      this.getUpdate().password,
+      salt
+    );
+  }
+  if (this.getUpdate().securityAnswer) {
+    const salt = await bcrypt.genSalt(10);
+    this.getUpdate().securityAnswer = await bcrypt.hash(
+      this.getUpdate().securityAnswer,
+      salt
+    );
+  }
+  next();
 });
 
 healthCareProfessionalSchema.methods.createJWT = function () {
@@ -94,22 +95,22 @@ healthCareProfessionalSchema.methods.createJWT = function () {
 };
 
 healthCareProfessionalSchema.methods.comparePassword = async function (
-	password
+  password
 ) {
-	const isMatch = await bcrypt.compare(password, this.password);
-	return isMatch;
+  const isMatch = await bcrypt.compare(password, this.password);
+  return isMatch;
 };
 
 healthCareProfessionalSchema.methods.compareSecurity = async function (
-	securityAnswer
+  securityAnswer
 ) {
-	const isMatch = await bcrypt.compare(securityAnswer, this.securityAnswer);
-	return isMatch;
+  const isMatch = await bcrypt.compare(securityAnswer, this.securityAnswer);
+  return isMatch;
 };
 
 const HealthCareProfessional = mongoose.model(
-	'HealthCareProfessional',
-	healthCareProfessionalSchema
+  'HealthCareProfessional',
+  healthCareProfessionalSchema
 );
 
 module.exports = HealthCareProfessional;

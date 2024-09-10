@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 
 const superAdminSchema = new mongoose.Schema({
     firstName: {
@@ -24,7 +25,7 @@ const superAdminSchema = new mongoose.Schema({
     },
     sex: {
         type: String,
-        enum: ['Male', 'Female'],
+        enum: ['male', 'female'],
         required: true,
     },
     password: {
@@ -33,14 +34,23 @@ const superAdminSchema = new mongoose.Schema({
     },
     staff_id: {
         type: String,
-        required: true,
+        unique: true,
+        // Remove the required: true constraint
     },
- })
+ });
 
-superAdminSchema.pre('save', async function(next) {
-    this.staff_id = `CEO${(lastId + 1).toString().padStart(6, '0')}`;
+superAdminSchema.pre('validate', async function(next) {
+    if (!this.staff_id) {
+        try {
+            const latestRecord = await this.constructor.findOne().sort('-staff_id');
+            const lastId = latestRecord ? parseInt(latestRecord.staff_id.slice(3)) : 0;
+            this.staff_id = `CEO${(lastId + 1).toString().padStart(6, '0')}`;
+        } catch (error) {
+            return next(error);
+        }
+    }
     next();
-})
+});
 
 superAdminSchema.pre("save", async function (next) {
     if (this.isModified("password")) {
@@ -52,9 +62,9 @@ superAdminSchema.pre("save", async function (next) {
       this.securityAnswer = await bcrypt.hash(this.securityAnswer, salt);
     }
     next();
-  });
-  
-  superAdminSchema.pre("findOneAndUpdate", async function (next) {
+});
+
+superAdminSchema.pre("findOneAndUpdate", async function (next) {
     if (this.getUpdate().password) {
       const salt = await bcrypt.genSalt(10);
       this.getUpdate().password = await bcrypt.hash(
@@ -70,9 +80,9 @@ superAdminSchema.pre("save", async function (next) {
       );
     }
     next();
-  });
-  
-  superAdminSchema.methods.createJWT = function () {
+});
+
+superAdminSchema.methods.createJWT = function () {
     return jwt.sign(
       { staff_id: this.staff_id },
       process.env.JWT_SECRET,
@@ -80,22 +90,22 @@ superAdminSchema.pre("save", async function (next) {
         expiresIn: process.env.JWT_LIFETIME,
       }
     );
-  };
-  
-  superAdminSchema.methods.comparePassword = async function (
+};
+
+superAdminSchema.methods.comparePassword = async function (
     password
-  ) {
+) {
     const isMatch = await bcrypt.compare(password, this.password);
     return isMatch;
-  };
-  
-  superAdminSchema.methods.compareSecurity = async function (
+};
+
+superAdminSchema.methods.compareSecurity = async function (
     securityAnswer
-  ) {
+) {
     const isMatch = await bcrypt.compare(securityAnswer, this.securityAnswer);
     return isMatch;
-  };
+};
 
-  const SuperAdmin = mongoose.model('SuperAdmin', superAdminSchema);
+const SuperAdmin = mongoose.model('SuperAdmin', superAdminSchema);
 
-  module.exports = SuperAdmin;
+module.exports = SuperAdmin;
