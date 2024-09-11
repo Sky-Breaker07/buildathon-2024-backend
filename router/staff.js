@@ -14,6 +14,7 @@ const {
   changeHealthcareProfessionalAdminStatus,
   removeHealthcareProfessional,
   removeHealthInformationManager,
+  removeAdminHealthcareProfessional,
 } = require('../controllers/staff');
 
 // Public routes
@@ -35,5 +36,5 @@ router.delete('/hcp/:staff_id', removeHealthcareProfessional);
 router.post('/register-him', registerHealthInformationManager);
 router.get('/him', getAllHealthInformationManagers);
 router.delete('/him/:staff_id', removeHealthInformationManager);
-
+router.delete('/admin-hcp/:staff_id', removeAdminHealthcareProfessional);
 module.exports = router;

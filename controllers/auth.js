@@ -63,7 +63,7 @@ const login = async (req, res) => {
     if (!staff) {
       return errorHandler(res, StatusCodes.UNAUTHORIZED, "Invalid credentials");
     }
-
+    console.log(password);
     const isPasswordCorrect = await staff.comparePassword(password);
     if (!isPasswordCorrect) {
       return errorHandler(res, StatusCodes.UNAUTHORIZED, "Invalid credentials");

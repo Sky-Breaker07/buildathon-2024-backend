@@ -105,7 +105,7 @@ const registerAdminHealthcareProfessional = async (req, res) => {
       profession,
       securityQuestion,
       securityAnswer,
-      password: password || lastName, // Use provided password or lastName as default
+      password: lastName,
       isAdmin: true,
       registeredBy,
     });
@@ -494,6 +494,61 @@ const removeHealthInformationManager = async (req, res) => {
   }
 };
 
+const removeAdminHealthcareProfessional = async (req, res) => {
+  try {
+    const { staff_id } = req.params;
+    const { staff_id: performedBy } = req.staff;
+
+    // Check if the action is performed by a SuperAdmin
+    const superAdmin = await SuperAdmin.findOne({ staff_id: performedBy });
+    if (!superAdmin) {
+      return errorHandler(
+        res,
+        StatusCodes.FORBIDDEN,
+        'Only Super Admin can remove Admin Healthcare Professionals'
+      );
+    }
+
+    // Find and remove the Admin Healthcare Professional
+    const adminHCP = await HealthCareProfessional.findOneAndDelete({ staff_id, isAdmin: true });
+
+    if (!adminHCP) {
+      return errorHandler(
+        res,
+        StatusCodes.NOT_FOUND,
+        'Admin Healthcare Professional not found'
+      );
+    }
+
+    // Log the action
+    await Archive.create({
+      action: 'REMOVE',
+      targetModel: 'HealthCareProfessional',
+      targetId: staff_id,
+      performedBy,
+      details: {
+        name: adminHCP.name,
+        email: adminHCP.email,
+        profession: adminHCP.profession
+      }
+    });
+
+    successHandler(
+      res,
+      StatusCodes.OK,
+      null,
+      'Admin Healthcare Professional removed successfully'
+    );
+  } catch (error) {
+    console.error(error);
+    errorHandler(
+      res,
+      StatusCodes.INTERNAL_SERVER_ERROR,
+      'Failed to remove Admin Healthcare Professional'
+    );
+  }
+};
+
 module.exports = {
   registerSuperAdmin,
   registerAdminHealthcareProfessional,
@@ -506,4 +561,5 @@ module.exports = {
   changeHealthcareProfessionalAdminStatus,
   removeHealthcareProfessional,
   removeHealthInformationManager,
+  removeAdminHealthcareProfessional,
 };
