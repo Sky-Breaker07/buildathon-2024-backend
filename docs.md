@@ -588,6 +588,75 @@ Note: This action can only be performed by a Super Admin. Attempting to access t
   }
   ```
 
+  ### Get All Patients
+
+- **URL:** `/api/v1/patients`
+- **Method:** `GET`
+- **Auth Required:** Yes
+- **Query Parameters:**
+  - `page`: number (optional, default: 1)
+  - `limit`: number (optional, default: 10)
+- **Response:**
+  ```json
+  {
+    "status": "success",
+    "statusCode": 200,
+    "message": "Patients retrieved successfully",
+    "data": {
+      "patients": [
+        {
+          "_id": "string",
+          "biodata": {
+            "_id": "string",
+            "name": "string",
+            "age": "number",
+            "sex": "string",
+            "tribe": "string",
+            "religion": "string",
+            "occupation": "string",
+            "marital_status": "string",
+            "address": "string",
+            "createdAt": "string",
+            "updatedAt": "string",
+            "__v": "number"
+          },
+          "hospital_record": {
+            "mortality": {
+              "status": "boolean",
+              "date": "string | null",
+              "cause": "string | null"
+            },
+            "_id": "string",
+            "hospital_id": "string",
+            "biodata": "string",
+            "appointments": [
+              {
+                "date": "string",
+                "status": "string",
+                "time": "string",
+                "_id": "string"
+              }
+            ],
+            "professionals_assigned": ["string"],
+            "sessionCount": "number | null",
+            "nightCount": "number | null",
+            "__v": "number"
+          },
+          "vital_signs": ["string"],
+          "assessments": ["string"],
+          "treatments": ["string"],
+          "discharges": ["string"],
+          "evaluations": ["string"],
+          "__v": "number"
+        }
+      ],
+      "currentPage": "number",
+      "totalPages": "number",
+      "totalPatients": "number"
+    }
+  }
+  ```
+
 ### Create Assessment
 
 - **URL:** `/api/v1/patients/assessment`

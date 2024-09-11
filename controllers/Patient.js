@@ -1,6 +1,7 @@
 const { createAssessment } = require("./Assessment");
 const HealthCareProfessional = require("../models/HealthCareProfessional");
 const HospitalRecord = require("../models/HospitalRecord");
+const BioData = require("../models/Biodata");
 
 const { registerPatient, getHospitalRecord, getPatient } = require("./utils");
 const mongoose = require("mongoose");
@@ -505,7 +506,19 @@ const updatePatientInfo = async (req, res) => {
       );
     }
 
-    const patient = await Patient.findOne({ hospital_record: hospital_id }).session(session);
+    // First, find the HospitalRecord using hospital_id
+    const hospitalRecordDoc = await HospitalRecord.findOne({ hospital_id }).session(session);
+
+    if (!hospitalRecordDoc) {
+      await session.abortTransaction();
+      session.endSession();
+      return errorHandler(res, StatusCodes.NOT_FOUND, "Hospital record not found.");
+    }
+
+    // Now use the _id of the HospitalRecord to find the Patient
+    const patient = await Patient.findOne({ hospital_record: hospitalRecordDoc._id })
+      .populate('biodata')
+      .session(session);
 
     if (!patient) {
       await session.abortTransaction();
@@ -515,22 +528,29 @@ const updatePatientInfo = async (req, res) => {
 
     // Update biodata if provided
     if (biodata && Object.keys(biodata).length > 0) {
-      await patient.biodata.updateOne(biodata, { session });
+      // Assuming biodata is a subdocument or referenced document
+      if (patient.biodata) {
+        Object.assign(patient.biodata, biodata);
+        await patient.biodata.save({ session });
+      } else {
+        // If biodata doesn't exist, create a new one
+        patient.biodata = new BioData(biodata);
+        await patient.biodata.save({ session });
+      }
     }
 
     // Update hospital record if provided
     if (hospitalRecord && Object.keys(hospitalRecord).length > 0) {
-      await HospitalRecord.findOneAndUpdate(
-        { hospital_id },
-        hospitalRecord,
-        { new: true, session }
-      );
+      Object.assign(hospitalRecordDoc, hospitalRecord);
+      await hospitalRecordDoc.save({ session });
     }
+
+    await patient.save({ session });
 
     await session.commitTransaction();
     session.endSession();
 
-    const updatedPatient = await Patient.findOne({ hospital_record: hospital_id })
+    const updatedPatient = await Patient.findOne({ hospital_record: hospitalRecordDoc._id })
       .populate('biodata')
       .populate('hospital_record');
 
