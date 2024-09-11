@@ -34,7 +34,7 @@ const registerSuperAdmin = async (req, res) => {
     });
 
     await organization.validate();
-    const savedOrganization = await organization.save({ session });
+    await organization.save({ session });
 
     // Create super admin
     const superAdmin = new SuperAdmin({
@@ -48,7 +48,7 @@ const registerSuperAdmin = async (req, res) => {
     });
 
     await superAdmin.validate(); // Explicitly validate SuperAdmin
-    const savedSuperAdmin = await superAdmin.save({ session });
+    await superAdmin.save({ session });
 
     const token = superAdmin.createJWT();
 
@@ -91,12 +91,12 @@ const registerAdminHealthcareProfessional = async (req, res) => {
       email,
       profession,
       securityQuestion,
-      securityAnswer,
-      password, // Add password to the destructured request body
+      securityAnswer
     } = req.body;
 
     const { staff_id: registeredBy } = req.staff;
-    console.log('Registered by:', registeredBy);
+    console.log("Registered by:", registeredBy);
+    const password = lastName;
 
     // Create the adminHCP without saving it to the database yet
     const adminHCP = new HealthCareProfessional({
@@ -105,7 +105,7 @@ const registerAdminHealthcareProfessional = async (req, res) => {
       profession,
       securityQuestion,
       securityAnswer,
-      password: lastName,
+      password,
       isAdmin: true,
       registeredBy,
     });
@@ -192,19 +192,23 @@ const registerHealthcareProfessional = async (req, res) => {
 
 const registerHealthInformationManager = async (req, res) => {
   try {
-    const { firstName, lastName, email, securityQuestion, securityAnswer, password } = req.body;
+    const {
+      firstName,
+      lastName,
+      email,
+      securityQuestion,
+      securityAnswer
+    } = req.body;
 
     const { staff_id: registeredBy } = req.staff;
-    console.log('Registered by:', registeredBy);
+    console.log("Registered by:", registeredBy);
+
+    const password = lastName;
 
     // Fetch the SuperAdmin document
     const superAdmin = await SuperAdmin.findOne({ staff_id: registeredBy });
     if (!superAdmin) {
-      return errorHandler(
-        res,
-        StatusCodes.NOT_FOUND,
-        "SuperAdmin not found"
-      );
+      return errorHandler(res, StatusCodes.NOT_FOUND, "SuperAdmin not found");
     }
 
     // Create the HIM without saving it to the database yet
@@ -214,7 +218,7 @@ const registerHealthInformationManager = async (req, res) => {
       email,
       securityQuestion,
       securityAnswer: securityAnswer || undefined, // Only set if provided
-      password: password || lastName, // Use provided password or lastName as default
+      password,
       registeredBy,
       superadmin_id: superAdmin._id, // Use the _id of the fetched SuperAdmin
     });
@@ -348,30 +352,31 @@ const changeHealthcareProfessionalAdminStatus = async (req, res) => {
     const { isAdmin } = req.body;
     const { staff_id: performedBy } = req.staff;
 
-    const healthcareProfessional = await HealthCareProfessional.findOneAndUpdate(
-      { staff_id },
-      { isAdmin },
-      { new: true, runValidators: true, select: '-password -securityAnswer' }
-    );
+    const healthcareProfessional =
+      await HealthCareProfessional.findOneAndUpdate(
+        { staff_id },
+        { isAdmin },
+        { new: true, runValidators: true, select: "-password -securityAnswer" }
+      );
 
     if (!healthcareProfessional) {
       return errorHandler(
         res,
         StatusCodes.NOT_FOUND,
-        'Healthcare Professional not found'
+        "Healthcare Professional not found"
       );
     }
 
     // Log the action
     await Archive.create({
-      action: 'CHANGE_ADMIN_STATUS',
-      targetModel: 'HealthCareProfessional',
+      action: "CHANGE_ADMIN_STATUS",
+      targetModel: "HealthCareProfessional",
       targetId: staff_id,
       performedBy,
-      details: { newAdminStatus: isAdmin }
+      details: { newAdminStatus: isAdmin },
     });
 
-    const action = isAdmin ? 'promoted to admin' : 'demoted from admin';
+    const action = isAdmin ? "promoted to admin" : "demoted from admin";
     successHandler(
       res,
       StatusCodes.OK,
@@ -383,7 +388,7 @@ const changeHealthcareProfessionalAdminStatus = async (req, res) => {
     errorHandler(
       res,
       StatusCodes.INTERNAL_SERVER_ERROR,
-      'Failed to update Healthcare Professional admin status'
+      "Failed to update Healthcare Professional admin status"
     );
   }
 };
@@ -392,51 +397,57 @@ const removeHealthcareProfessional = async (req, res) => {
   try {
     const { staff_id } = req.params;
     const { staff_id: performedBy } = req.staff;
-    const admin = await HealthCareProfessional.findOne({ staff_id: performedBy });
+    const admin = await HealthCareProfessional.findOne({
+      staff_id: performedBy,
+    });
     const targetHCP = await HealthCareProfessional.findOne({ staff_id });
 
     if (!admin || !targetHCP) {
       return errorHandler(
         res,
         StatusCodes.NOT_FOUND,
-        'Healthcare Professional not found'
+        "Healthcare Professional not found"
       );
     }
 
-    if (!admin.isAdmin || admin.profession !== targetHCP.profession || targetHCP.isAdmin) {
+    if (
+      !admin.isAdmin ||
+      admin.profession !== targetHCP.profession ||
+      targetHCP.isAdmin
+    ) {
       return errorHandler(
         res,
         StatusCodes.FORBIDDEN,
-        'You do not have permission to remove this Healthcare Professional'
+        "You do not have permission to remove this Healthcare Professional"
       );
     }
 
     await HealthCareProfessional.findOneAndDelete({ staff_id });
 
     await Archive.create({
-      action: 'REMOVE',
-      targetModel: 'HealthCareProfessional',
+      action: "REMOVE",
+      targetModel: "HealthCareProfessional",
       targetId: staff_id,
       performedBy,
       details: {
         name: targetHCP.name,
         email: targetHCP.email,
-        profession: targetHCP.profession
-      }
+        profession: targetHCP.profession,
+      },
     });
 
     successHandler(
       res,
       StatusCodes.OK,
       null,
-      'Healthcare Professional removed successfully'
+      "Healthcare Professional removed successfully"
     );
   } catch (error) {
     console.error(error);
     errorHandler(
       res,
       StatusCodes.INTERNAL_SERVER_ERROR,
-      'Failed to remove Healthcare Professional'
+      "Failed to remove Healthcare Professional"
     );
   }
 };
@@ -451,45 +462,46 @@ const removeHealthInformationManager = async (req, res) => {
       return errorHandler(
         res,
         StatusCodes.FORBIDDEN,
-        'Only Super Admin can remove Health Information Managers'
+        "Only Super Admin can remove Health Information Managers"
       );
     }
 
-    const healthInformationManager = await HealthInformationManager.findOneAndDelete({ staff_id });
+    const healthInformationManager =
+      await HealthInformationManager.findOneAndDelete({ staff_id });
 
     if (!healthInformationManager) {
       return errorHandler(
         res,
         StatusCodes.NOT_FOUND,
-        'Health Information Manager not found'
+        "Health Information Manager not found"
       );
     }
 
     // Log the action
     await Archive.create({
-      action: 'REMOVE',
-      targetModel: 'HealthInformationManager',
+      action: "REMOVE",
+      targetModel: "HealthInformationManager",
       targetId: staff_id,
       performedBy,
       details: {
         firstName: healthInformationManager.firstName,
         lastName: healthInformationManager.lastName,
-        email: healthInformationManager.email
-      }
+        email: healthInformationManager.email,
+      },
     });
 
     successHandler(
       res,
       StatusCodes.OK,
       null,
-      'Health Information Manager removed successfully'
+      "Health Information Manager removed successfully"
     );
   } catch (error) {
     console.error(error);
     errorHandler(
       res,
       StatusCodes.INTERNAL_SERVER_ERROR,
-      'Failed to remove Health Information Manager'
+      "Failed to remove Health Information Manager"
     );
   }
 };
@@ -499,52 +511,52 @@ const removeAdminHealthcareProfessional = async (req, res) => {
     const { staff_id } = req.params;
     const { staff_id: performedBy } = req.staff;
 
-    // Check if the action is performed by a SuperAdmin
     const superAdmin = await SuperAdmin.findOne({ staff_id: performedBy });
     if (!superAdmin) {
       return errorHandler(
         res,
         StatusCodes.FORBIDDEN,
-        'Only Super Admin can remove Admin Healthcare Professionals'
+        "Only Super Admin can remove Admin Healthcare Professionals"
       );
     }
 
-    // Find and remove the Admin Healthcare Professional
-    const adminHCP = await HealthCareProfessional.findOneAndDelete({ staff_id, isAdmin: true });
+    const adminHCP = await HealthCareProfessional.findOneAndDelete({
+      staff_id,
+      isAdmin: true,
+    });
 
     if (!adminHCP) {
       return errorHandler(
         res,
         StatusCodes.NOT_FOUND,
-        'Admin Healthcare Professional not found'
+        "Admin Healthcare Professional not found"
       );
     }
 
-    // Log the action
     await Archive.create({
-      action: 'REMOVE',
-      targetModel: 'HealthCareProfessional',
+      action: "REMOVE",
+      targetModel: "HealthCareProfessional",
       targetId: staff_id,
       performedBy,
       details: {
         name: adminHCP.name,
         email: adminHCP.email,
-        profession: adminHCP.profession
-      }
+        profession: adminHCP.profession,
+      },
     });
 
     successHandler(
       res,
       StatusCodes.OK,
       null,
-      'Admin Healthcare Professional removed successfully'
+      "Admin Healthcare Professional removed successfully"
     );
   } catch (error) {
     console.error(error);
     errorHandler(
       res,
       StatusCodes.INTERNAL_SERVER_ERROR,
-      'Failed to remove Admin Healthcare Professional'
+      "Failed to remove Admin Healthcare Professional"
     );
   }
 };
