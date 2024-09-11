@@ -39,6 +39,11 @@ const healthInformationManagerSchema = new mongoose.Schema({
     registeredBy: {
       type: String,
       required: true,
+    },
+    organization: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Organization',
+        required: true,
     }
     })
 

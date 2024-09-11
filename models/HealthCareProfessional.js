@@ -45,6 +45,11 @@ const healthCareProfessionalSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  organization: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Organization',
+    required: true,
+  }
 });
 
 healthCareProfessionalSchema.methods.generateStaffId = async function() {
@@ -87,7 +92,7 @@ healthCareProfessionalSchema.pre('findOneAndUpdate', async function (next) {
 
 healthCareProfessionalSchema.methods.createJWT = function () {
   return jwt.sign(
-    { studentId: this._id, matricNumber: this.matricNumber },
+    { staff_id: this.staff_id },
     process.env.JWT_SECRET,
     {
       expiresIn: process.env.JWT_LIFETIME,

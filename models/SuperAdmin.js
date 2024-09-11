@@ -37,6 +37,11 @@ const superAdminSchema = new mongoose.Schema({
         unique: true,
         // Remove the required: true constraint
     },
+    organization: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Organization',
+        required: true,
+    },
  });
 
 superAdminSchema.pre('validate', async function(next) {

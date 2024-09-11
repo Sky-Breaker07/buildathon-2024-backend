@@ -9,8 +9,8 @@ const authenticateStaff = (req, res, next) => {
             message: 'Unauthorized: No token provided or invalid format',
         })
     }
-    const token = authHeader.split(' ')[1]; // Extract the token part
-    console.log('Token provided:', token);
+    const token = authHeader.split(' ')[1];
+   
     try {
         const payload = jwt.verify(token, process.env.JWT_SECRET)
         req.staff = {staff_id: payload.staff_id}

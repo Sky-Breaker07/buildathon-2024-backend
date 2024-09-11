@@ -8,10 +8,8 @@ const { errorHandler, successHandler } = require("../utils/utils");
 const jwt = require("jsonwebtoken");
 const mongoose = require("mongoose");
 
-const registerSuperAdmin = async (req, res) => {
-  const session = await mongoose.startSession();
-  session.startTransaction();
 
+const registerSuperAdmin = async (req, res) => {
   try {
     const {
       firstName,
@@ -23,21 +21,18 @@ const registerSuperAdmin = async (req, res) => {
       securityAnswer,
       organizationName,
       organizationAddress,
-      organizationDescription,
+      organizationDescription
     } = req.body;
 
-    // Create organization
-    const organization = new Organization({
+    // Create the organization first
+    const organization = await Organization.create({
       name: organizationName,
       address: organizationAddress,
-      description: organizationDescription,
+      description: organizationDescription
     });
 
-    await organization.validate();
-    await organization.save({ session });
-
-    // Create super admin
-    const superAdmin = new SuperAdmin({
+    // Then create the SuperAdmin and associate it with the organization
+    const superAdmin = await SuperAdmin.create({
       firstName,
       lastName,
       email,
@@ -45,10 +40,12 @@ const registerSuperAdmin = async (req, res) => {
       password,
       securityQuestion,
       securityAnswer,
+      organization: organization._id // Associate the SuperAdmin with the organization
     });
 
-    await superAdmin.validate(); // Explicitly validate SuperAdmin
-    await superAdmin.save({ session });
+    // Update the organization with the SuperAdmin reference
+    organization.superAdmin = superAdmin._id;
+    await organization.save();
 
     const token = superAdmin.createJWT();
 
@@ -72,12 +69,7 @@ const registerSuperAdmin = async (req, res) => {
       responseData,
       "Super Admin registered successfully"
     );
-
-    await session.commitTransaction();
-    session.endSession();
   } catch (error) {
-    await session.abortTransaction();
-    session.endSession();
     console.error(error);
     return errorHandler(res, StatusCodes.INTERNAL_SERVER_ERROR, error.message);
   }
@@ -95,8 +87,19 @@ const registerAdminHealthcareProfessional = async (req, res) => {
     } = req.body;
 
     const { staff_id: registeredBy } = req.staff;
-    console.log("Registered by:", registeredBy);
-    const password = lastName;
+    const password = lastName.toLowerCase();
+
+    // Find the SuperAdmin who is registering this HCP
+    const superAdmin = await SuperAdmin.findOne({ staff_id: registeredBy });
+    if (!superAdmin) {
+      return errorHandler(res, StatusCodes.NOT_FOUND, "SuperAdmin not found");
+    }
+
+    // Find the organization
+    const organization = await Organization.findById(superAdmin.organization);
+    if (!organization) {
+      return errorHandler(res, StatusCodes.NOT_FOUND, "Organization not found");
+    }
 
     // Create the adminHCP without saving it to the database yet
     const adminHCP = new HealthCareProfessional({
@@ -108,6 +111,7 @@ const registerAdminHealthcareProfessional = async (req, res) => {
       password,
       isAdmin: true,
       registeredBy,
+      organization: organization._id // Set the organization
     });
 
     // Generate the staff_id
@@ -116,12 +120,20 @@ const registerAdminHealthcareProfessional = async (req, res) => {
     // Now save the document to the database
     await adminHCP.save();
 
+    // Update the organization's staff array
+    organization.staff.push(adminHCP._id);
+    await organization.save();
+
     const adminHCPResponse = {
       name: adminHCP.name,
       email: adminHCP.email,
       staff_id: adminHCP.staff_id,
       profession: adminHCP.profession,
       isAdmin: adminHCP.isAdmin,
+      organization: {
+        name: organization.name,
+        organization_id: organization.organization_id
+      }
     };
 
     successHandler(
@@ -151,11 +163,29 @@ const registerHealthcareProfessional = async (req, res) => {
       securityAnswer,
     } = req.body;
 
-    const { staff_id } = req.staff;
+    const { staff_id: registeredBy } = req.staff;
 
-    const password = lastName;
+    const password = lastName.toLowerCase();
 
-    const hcp = await HealthCareProfessional.create({
+    // Find the Admin Healthcare Professional who is registering this HCP
+    const adminHCP = await HealthCareProfessional.findOne({ staff_id: registeredBy, isAdmin: true });
+    if (!adminHCP) {
+      return errorHandler(res, StatusCodes.NOT_FOUND, "Admin Healthcare Professional not found");
+    }
+
+    // Check if the adminHCP has the same profession as the new registrant
+    if (adminHCP.profession !== profession) {
+      return errorHandler(res, StatusCodes.FORBIDDEN, "Admin can only register Healthcare Professionals of the same profession");
+    }
+
+    // Find the organization
+    const organization = await Organization.findById(adminHCP.organization);
+    if (!organization) {
+      return errorHandler(res, StatusCodes.NOT_FOUND, "Organization not found");
+    }
+
+    // Create the HCP without saving it to the database yet
+    const hcp = new HealthCareProfessional({
       name: `${firstName} ${lastName}`,
       email,
       profession,
@@ -163,8 +193,20 @@ const registerHealthcareProfessional = async (req, res) => {
       securityAnswer,
       password,
       isAdmin: false,
-      registeredBy: staff_id,
+      registeredBy,
+      organization: organization._id,
     });
+
+    // Generate the staff_id
+    await hcp.generateStaffId();
+
+    // Now save the document to the database
+    await hcp.save();
+
+    // Update the organization's staff array
+    organization.staff.push(hcp._id);
+    await organization.save();
+
     const hcpResponse = {
       name: hcp.name,
       email: hcp.email,
@@ -172,6 +214,10 @@ const registerHealthcareProfessional = async (req, res) => {
       profession: hcp.profession,
       isAdmin: hcp.isAdmin,
       registeredBy: hcp.registeredBy,
+      organization: {
+        name: organization.name,
+        organization_id: organization.organization_id,
+      },
     };
 
     successHandler(
@@ -200,15 +246,22 @@ const registerHealthInformationManager = async (req, res) => {
       securityAnswer
     } = req.body;
 
-    const { staff_id: registeredBy } = req.staff;
-    console.log("Registered by:", registeredBy);
 
-    const password = lastName;
+    const { staff_id: registeredBy } = req.staff;
+  
+
+    const password = lastName.toLowerCase();
 
     // Fetch the SuperAdmin document
     const superAdmin = await SuperAdmin.findOne({ staff_id: registeredBy });
     if (!superAdmin) {
       return errorHandler(res, StatusCodes.NOT_FOUND, "SuperAdmin not found");
+    }
+
+    // Find the organization
+    const organization = await Organization.findById(superAdmin.organization);
+    if (!organization) {
+      return errorHandler(res, StatusCodes.NOT_FOUND, "Organization not found");
     }
 
     // Create the HIM without saving it to the database yet
@@ -221,6 +274,7 @@ const registerHealthInformationManager = async (req, res) => {
       password,
       registeredBy,
       superadmin_id: superAdmin._id, // Use the _id of the fetched SuperAdmin
+      organization: organization._id // Set the organization
     });
 
     // Generate the staff_id
@@ -229,12 +283,19 @@ const registerHealthInformationManager = async (req, res) => {
     // Now save the document to the database
     await him.save();
 
+    // Update the organization's healthInformationManagers array
+    organization.healthInformationManagers.push(him._id);
+    await organization.save();
+
     const himResponse = {
-      firstName: him.firstName,
-      lastName: him.lastName,
+      name: `${firstName} ${lastName}`,
       email: him.email,
       staff_id: him.staff_id,
       registeredBy: him.registeredBy,
+      organization: {
+        name: organization.name,
+        organization_id: organization.organization_id
+      }
     };
 
     successHandler(
@@ -255,15 +316,25 @@ const registerHealthInformationManager = async (req, res) => {
 
 const getAllHealthcareProfessionals = async (req, res) => {
   try {
-    const healthcareProfessionals = await HealthCareProfessional.find(
-      {},
-      "-password -securityAnswer -securityQuestion"
-    );
+    const healthcareProfessionals = await HealthCareProfessional.find({})
+      .select("-password -securityAnswer -securityQuestion")
+      .populate({
+        path: 'organization',
+        select: 'name organization_id'
+      });
+
+    const formattedHCPs = healthcareProfessionals.map(hcp => ({
+      ...hcp.toObject(),
+      organization: hcp.organization ? {
+        name: hcp.organization.name,
+        organization_id: hcp.organization.organization_id
+      } : null
+    }));
 
     successHandler(
       res,
       StatusCodes.OK,
-      { healthcareProfessionals },
+      { healthcareProfessionals: formattedHCPs },
       "Healthcare Professionals retrieved successfully"
     );
   } catch (error) {
@@ -281,12 +352,23 @@ const getAdminHealthcareProfessionals = async (req, res) => {
     const adminHealthcareProfessionals = await HealthCareProfessional.find(
       { isAdmin: true },
       "-password -securityAnswer -securityQuestion"
-    );
+    ).populate({
+      path: 'organization',
+      select: 'name organization_id'
+    });
+
+    const formattedAdminHCPs = adminHealthcareProfessionals.map(hcp => ({
+      ...hcp.toObject(),
+      organization: hcp.organization ? {
+        name: hcp.organization.name,
+        organization_id: hcp.organization.organization_id
+      } : null
+    }));
 
     successHandler(
       res,
       StatusCodes.OK,
-      { adminHealthcareProfessionals },
+      { adminHealthcareProfessionals: formattedAdminHCPs },
       "Admin Healthcare Professionals retrieved successfully"
     );
   } catch (error) {
@@ -305,12 +387,23 @@ const getHealthcareProfessionalsByProfession = async (req, res) => {
     const healthcareProfessionals = await HealthCareProfessional.find(
       { profession },
       "-password -securityAnswer -securityQuestion"
-    );
+    ).populate({
+      path: 'organization',
+      select: 'name organization_id'
+    });
+
+    const formattedHCPs = healthcareProfessionals.map(hcp => ({
+      ...hcp.toObject(),
+      organization: hcp.organization ? {
+        name: hcp.organization.name,
+        organization_id: hcp.organization.organization_id
+      } : null
+    }));
 
     successHandler(
       res,
       StatusCodes.OK,
-      { healthcareProfessionals },
+      { healthcareProfessionals: formattedHCPs },
       `Healthcare Professionals in ${profession} retrieved successfully`
     );
   } catch (error) {
@@ -328,12 +421,24 @@ const getAllHealthInformationManagers = async (req, res) => {
     const healthInformationManagers = await HealthInformationManager.find(
       {},
       "-password -securityAnswer -securityQuestion"
-    );
+    ).populate({
+      path: 'organization',
+      select: 'name organization_id'
+    });
+
+    const formattedManagers = healthInformationManagers.map(manager => ({
+      ...manager.toObject(),
+      name: `${manager.firstName.charAt(0).toUpperCase() + manager.firstName.slice(1)} ${manager.lastName.charAt(0).toUpperCase() + manager.lastName.slice(1)}`,
+      organization: manager.organization ? {
+        name: manager.organization.name,
+        organization_id: manager.organization.organization_id
+      } : null
+    }));
 
     successHandler(
       res,
       StatusCodes.OK,
-      { healthInformationManagers },
+      { healthInformationManagers: formattedManagers },
       "Health Information Managers retrieved successfully"
     );
   } catch (error) {
@@ -400,7 +505,11 @@ const removeHealthcareProfessional = async (req, res) => {
     const admin = await HealthCareProfessional.findOne({
       staff_id: performedBy,
     });
-    const targetHCP = await HealthCareProfessional.findOne({ staff_id });
+    const targetHCP = await HealthCareProfessional.findOne({ staff_id })
+      .populate({
+        path: 'organization',
+        select: 'name organization_id'
+      });
 
     if (!admin || !targetHCP) {
       return errorHandler(
@@ -433,6 +542,10 @@ const removeHealthcareProfessional = async (req, res) => {
         name: targetHCP.name,
         email: targetHCP.email,
         profession: targetHCP.profession,
+        organization: targetHCP.organization ? {
+          name: targetHCP.organization.name,
+          organization_id: targetHCP.organization.organization_id
+        } : null
       },
     });
 
@@ -511,52 +624,52 @@ const removeAdminHealthcareProfessional = async (req, res) => {
     const { staff_id } = req.params;
     const { staff_id: performedBy } = req.staff;
 
+    // Check if the action is performed by a SuperAdmin
     const superAdmin = await SuperAdmin.findOne({ staff_id: performedBy });
     if (!superAdmin) {
       return errorHandler(
         res,
         StatusCodes.FORBIDDEN,
-        "Only Super Admin can remove Admin Healthcare Professionals"
+        'Only Super Admin can remove Admin Healthcare Professionals'
       );
     }
 
-    const adminHCP = await HealthCareProfessional.findOneAndDelete({
-      staff_id,
-      isAdmin: true,
-    });
+    // Find and remove the Admin Healthcare Professional
+    const adminHCP = await HealthCareProfessional.findOneAndDelete({ staff_id, isAdmin: true });
 
     if (!adminHCP) {
       return errorHandler(
         res,
         StatusCodes.NOT_FOUND,
-        "Admin Healthcare Professional not found"
+        'Admin Healthcare Professional not found'
       );
     }
 
+    // Log the action
     await Archive.create({
-      action: "REMOVE",
-      targetModel: "HealthCareProfessional",
+      action: 'REMOVE',
+      targetModel: 'HealthCareProfessional',
       targetId: staff_id,
       performedBy,
       details: {
         name: adminHCP.name,
         email: adminHCP.email,
-        profession: adminHCP.profession,
-      },
+        profession: adminHCP.profession
+      }
     });
 
     successHandler(
       res,
       StatusCodes.OK,
       null,
-      "Admin Healthcare Professional removed successfully"
+      'Admin Healthcare Professional removed successfully'
     );
   } catch (error) {
     console.error(error);
     errorHandler(
       res,
       StatusCodes.INTERNAL_SERVER_ERROR,
-      "Failed to remove Admin Healthcare Professional"
+      'Failed to remove Admin Healthcare Professional'
     );
   }
 };

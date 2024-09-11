@@ -18,6 +18,22 @@ const organizationSchema = new mongoose.Schema(
       type: String,
       unique: true,
     },
+    superAdmin: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "SuperAdmin",
+    },
+    staff: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "HealthCareProfessional",
+      },
+    ],
+    healthInformationManagers: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "HealthInformationManager",
+      },
+    ],
   },
   { timestamps: true }
 );
@@ -27,11 +43,11 @@ organizationSchema.pre("validate", async function (next) {
     try {
       const latestRecord = await this.constructor
         .findOne()
-        .sort('-organization_id');
+        .sort("-organization_id");
       const lastId = latestRecord
         ? parseInt(latestRecord.organization_id.slice(3))
         : 0;
-      this.organization_id = `CLG${(lastId + 1).toString().padStart(6, '0')}`;
+      this.organization_id = `CLG${(lastId + 1).toString().padStart(6, "0")}`;
     } catch (error) {
       return next(error);
     }
