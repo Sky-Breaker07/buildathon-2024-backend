@@ -14,7 +14,6 @@ const authenticateStaff = (req, res, next) => {
     try {
         const payload = jwt.verify(token, process.env.JWT_SECRET)
         req.staff = {staff_id: payload.staff_id}
-        console.log('Authenticated staff_id:', payload.staff_id);
         next()
     } catch (error) {
         console.error('Token verification failed:', error);

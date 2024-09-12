@@ -44,7 +44,26 @@ const healthInformationManagerSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Organization',
         required: true,
-    }
+    },
+    sentPatients: [{
+        patient: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'HospitalRecord',
+        },
+        sentTo: {
+            type: String,
+            required: true,
+        },
+        timestamp: {
+            type: Date,
+            default: Date.now,
+        },
+        status: {
+            type: String,
+            enum: ['pending', 'accepted', 'rejected'],
+            default: 'pending',
+        },
+    }],
     })
 
 

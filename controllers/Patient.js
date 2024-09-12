@@ -2,6 +2,8 @@ const { createAssessment } = require("./Assessment");
 const HealthCareProfessional = require("../models/HealthCareProfessional");
 const HospitalRecord = require("../models/HospitalRecord");
 const BioData = require("../models/Biodata");
+const HealthInformationManager = require("../models/HealthInformationManager");
+
 
 const { registerPatient, getHospitalRecord, getPatient } = require("./utils");
 const mongoose = require("mongoose");
@@ -568,6 +570,258 @@ const updatePatientInfo = async (req, res) => {
   }
 };
 
+const transferPatient = async (req, res) => {
+  try {
+    const { hospital_id, receiverStaffId } = req.body;
+    const senderStaffId = req.staff.staff_id;
+    // Check if the sender is a healthcare professional or health information manager
+    let sender = await HealthCareProfessional.findOne({ staff_id: senderStaffId });
+    let isSenderHCP = true;
+
+    if (!sender) {
+      sender = await HealthInformationManager.findOne({ staff_id: senderStaffId });
+      isSenderHCP = false;
+      if (!sender) {
+        return errorHandler(res, StatusCodes.UNAUTHORIZED, "Unauthorized: Sender not found");
+      }
+    }
+
+    // Check if the receiver is an admin healthcare professional
+    const receiver = await HealthCareProfessional.findOne({ staff_id: receiverStaffId, isAdmin: true });
+    if (!receiver) {
+      return errorHandler(res, StatusCodes.NOT_FOUND, "Receiver not found or is not an admin");
+    }
+
+    // If sender is HCP, check if their profession is different from the receiver's
+    if (isSenderHCP && sender.profession === receiver.profession) {
+      return errorHandler(res, StatusCodes.BAD_REQUEST, "Cannot transfer to the same profession");
+    }
+
+    // Find the patient's hospital record
+    const hospitalRecord = await HospitalRecord.findOne({ hospital_id });
+    if (!hospitalRecord) {
+      return errorHandler(res, StatusCodes.NOT_FOUND, "Patient not found");
+    }
+
+    // Add patient to receiver's receivedPatients
+    receiver.receivedPatients.push({
+      patient: hospitalRecord._id,
+      receivedFrom: senderStaffId,
+      timestamp: new Date(),
+      status: 'pending'
+    });
+    await receiver.save();
+
+    // Add patient to sender's sentPatients
+    sender.sentPatients.push({
+      patient: hospitalRecord._id,
+      sentTo: receiverStaffId,
+      timestamp: new Date(),
+      status: 'pending'
+    });
+    await sender.save();
+
+    successHandler(res, StatusCodes.OK, { message: "Patient transferred successfully" });
+  } catch (error) {
+    console.error(error);
+    errorHandler(res, StatusCodes.INTERNAL_SERVER_ERROR, "Server Error");
+  }
+};
+
+const acceptPatient = async (req, res) => {
+  try {
+    const { hospital_id, senderStaffId } = req.body;
+    const receiverStaffId = req.staff.staff_id;
+
+    // Check if the receiver is an admin healthcare professional
+    const receiver = await HealthCareProfessional.findOne({ staff_id: receiverStaffId, isAdmin: true });
+    if (!receiver) {
+      return errorHandler(res, StatusCodes.UNAUTHORIZED, "Unauthorized: Only admin can accept patients");
+    }
+
+    // Find the patient's hospital record
+    const hospitalRecord = await HospitalRecord.findOne({ hospital_id });
+    if (!hospitalRecord) {
+      return errorHandler(res, StatusCodes.NOT_FOUND, "Patient not found");
+    }
+
+    // Update receiver's receivedPatients
+    const receivedPatientIndex = receiver.receivedPatients.findIndex(
+      p => p.patient.toString() === hospitalRecord._id.toString() && p.receivedFrom === senderStaffId
+    );
+    if (receivedPatientIndex === -1) {
+      return errorHandler(res, StatusCodes.NOT_FOUND, "Transfer request not found");
+    }
+    receiver.receivedPatients[receivedPatientIndex].status = 'accepted';
+    await receiver.save();
+
+    // Update sender's sentPatients
+    let sender = await HealthCareProfessional.findOne({ staff_id: senderStaffId });
+    let isSenderHCP = true;
+    if (!sender) {
+      sender = await HealthInformationManager.findOne({ staff_id: senderStaffId });
+      isSenderHCP = false;
+    }
+
+    if (sender) {
+      const sentPatientIndex = sender.sentPatients.findIndex(
+        p => p.patient.toString() === hospitalRecord._id.toString() && p.sentTo === receiverStaffId
+      );
+      if (sentPatientIndex !== -1) {
+        sender.sentPatients[sentPatientIndex].status = 'accepted';
+        await sender.save();
+      }
+    }
+    
+    successHandler(res, StatusCodes.OK, { message: "Patient accepted successfully" });
+  } catch (error) {
+    console.error(error);
+    errorHandler(res, StatusCodes.INTERNAL_SERVER_ERROR, "Server Error");
+  }
+};
+
+const rejectPatient = async (req, res) => {
+  try {
+    const { hospital_id, senderStaffId } = req.body;
+    const receiverStaffId = req.staff.staff_id;
+
+    // Check if the receiver is an admin healthcare professional
+    const receiver = await HealthCareProfessional.findOne({ staff_id: receiverStaffId, isAdmin: true });
+    if (!receiver) {
+      return errorHandler(res, StatusCodes.UNAUTHORIZED, "Unauthorized: Only admin can reject patients");
+    }
+
+    // Find the patient's hospital record
+    const hospitalRecord = await HospitalRecord.findOne({ hospital_id });
+    if (!hospitalRecord) {
+      return errorHandler(res, StatusCodes.NOT_FOUND, "Patient not found");
+    }
+
+    // Update receiver's receivedPatients
+    const receivedPatientIndex = receiver.receivedPatients.findIndex(
+      p => p.patient.toString() === hospitalRecord._id.toString() && p.receivedFrom === senderStaffId
+    );
+    if (receivedPatientIndex === -1) {
+      return errorHandler(res, StatusCodes.NOT_FOUND, "Transfer request not found");
+    }
+    receiver.receivedPatients[receivedPatientIndex].status = 'rejected';
+    await receiver.save();
+
+    // Update sender's sentPatients
+    let sender = await HealthCareProfessional.findOne({ staff_id: senderStaffId });
+    let isSenderHCP = true;
+    if (!sender) {
+      sender = await HealthInformationManager.findOne({ staff_id: senderStaffId });
+      isSenderHCP = false;
+    }
+
+    if (sender) {
+      const sentPatientIndex = sender.sentPatients.findIndex(
+        p => p.patient.toString() === hospitalRecord._id.toString() && p.sentTo === receiverStaffId
+      );
+      if (sentPatientIndex !== -1) {
+        sender.sentPatients[sentPatientIndex].status = 'rejected';
+        await sender.save();
+      }
+    }
+
+    successHandler(res, StatusCodes.OK, { message: "Patient rejected successfully" });
+  } catch (error) {
+    console.error(error);
+    errorHandler(res, StatusCodes.INTERNAL_SERVER_ERROR, "Server Error");
+  }
+};
+
+const getAdminJurisdictionPatients = async (req, res) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    const adminStaffId = req.staff.staff_id;
+    // Find the admin healthcare professional
+    const adminHCP = await HealthCareProfessional.findOne({ staff_id: adminStaffId, isAdmin: true }).session(session);
+    if (!adminHCP) {
+      await session.abortTransaction();
+      session.endSession();
+      return errorHandler(res, StatusCodes.UNAUTHORIZED, "Unauthorized: Only admin healthcare professionals can access this");
+    }
+
+    // Get all healthcare professionals of the same profession
+    const sameProfessionHCPs = await HealthCareProfessional.find({ profession: adminHCP.profession }).session(session);
+
+    // Get all patients assigned to the admin
+    const adminAssignedPatients = await Patient.find({ 'hospital_record': { $in: adminHCP.patientsAssigned } })
+      .populate('biodata', 'name')
+      .populate('hospital_record', 'hospital_id createdAt')
+      .select('biodata hospital_record')
+      .session(session);
+
+    // Get all patients assigned to other HCPs of the same profession
+    const otherHCPsAssignedPatients = await Promise.all(sameProfessionHCPs.map(async (hcp) => {
+      if (hcp.staff_id !== adminStaffId) {
+        const patients = await Patient.find({ 'hospital_record': { $in: hcp.patientsAssigned } })
+          .populate('biodata', 'name')
+          .populate('hospital_record', 'hospital_id createdAt')
+          .select('biodata hospital_record')
+          .session(session);
+        return { hcp: { staff_id: hcp.staff_id, name: hcp.name }, patients };
+      }
+      return null;
+    }));
+
+    // Get all patients received by the admin
+    const receivedPatients = await Promise.all(adminHCP.receivedPatients.map(async (receivedPatient) => {
+      const patient = await Patient.findOne({ hospital_record: receivedPatient.patient })
+        .populate('biodata', 'name')
+        .populate('hospital_record', 'hospital_id createdAt')
+        .select('biodata hospital_record')
+        .session(session);
+      return { ...patient.toObject(), status: receivedPatient.status };
+    }));
+
+    // Filter out assigned patients from received patients
+    const uniqueReceivedPatients = receivedPatients.filter(receivedPatient => 
+      !adminAssignedPatients.some(assignedPatient => 
+        assignedPatient.hospital_record.hospital_id === receivedPatient.hospital_record.hospital_id
+      ) && ['pending', 'rejected', 'accepted'].includes(receivedPatient.status)
+    );
+
+    await session.commitTransaction();
+    session.endSession();
+
+    const result = {
+      assignedToAdmin: adminAssignedPatients.map(patient => ({
+        name: patient.biodata.name,
+        hospital_id: patient.hospital_record.hospital_id,
+        dateOfRegistration: patient.hospital_record.createdAt
+      })),
+      assignedToOtherHCPs: otherHCPsAssignedPatients
+        .filter(Boolean)
+        .map(({ hcp, patients }) => ({
+          hcp: { staff_id: hcp.staff_id, name: hcp.name },
+          patients: patients.map(patient => ({
+            name: patient.biodata.name,
+            hospital_id: patient.hospital_record.hospital_id,
+            dateOfRegistration: patient.hospital_record.createdAt
+          }))
+        })),
+      receivedPatients: uniqueReceivedPatients.map(patient => ({
+        name: patient.biodata.name,
+        hospital_id: patient.hospital_record.hospital_id,
+        dateOfRegistration: patient.hospital_record.createdAt,
+        status: patient.status
+      }))
+    };
+
+    successHandler(res, StatusCodes.OK, result, "Patients under admin's jurisdiction retrieved successfully");
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+    console.error(error);
+    errorHandler(res, StatusCodes.INTERNAL_SERVER_ERROR, "Server Error");
+  }
+};
+
 module.exports = {
   registerPatientController,
   getHospitalRecordController,
@@ -582,4 +836,8 @@ module.exports = {
   createEvaluationController,
   getAllPatients,
   updatePatientInfo,
+  transferPatient,
+  acceptPatient,
+  rejectPatient,
+  getAdminJurisdictionPatients,
 };

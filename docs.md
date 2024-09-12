@@ -442,7 +442,7 @@ Note: The response data will vary based on the role of the user. Fields that are
 - **URL:** `/api/v1/staff/admin-hcp/:staff_id`
 - **Method:** `DELETE`
 - **Auth Required:** Yes (Super Admin only)
-- **URL Parameters:** 
+- **URL Parameters:**
   - `staff_id`: The staff ID of the Admin Healthcare Professional to be removed
 - **Response:**
   ```json
@@ -565,6 +565,7 @@ Note: This action can only be performed by a Super Admin. Attempting to access t
   }
   ```
 - **Response:**
+
   ```json
   {
     "status": "success",
@@ -727,6 +728,242 @@ Note: This action can only be performed by a Super Admin. Attempting to access t
   }
   ```
 
+### Update Mortality Status
+
+- **URL:** `/api/v1/patients/mortality-status`
+- **Method:** `POST`
+- **Auth Required:** Yes
+- **Controller:** `updateMortalityStatus`
+- **Request Body:**
+  ```json
+  {
+    "hospital_id": "string",
+    "status": "boolean",
+    "date": "string" (optional),
+    "cause": "string" (optional)
+  }
+  ```
+- **Response:**
+  ```json
+  {
+    "status": "success",
+    "statusCode": 200,
+    "message": "Mortality status updated successfully.",
+    "data": {
+      "hospitalRecord": {
+        // Updated hospital record object
+      }
+    }
+  }
+  ```
+
+### Update Session Count
+
+- **URL:** `/api/v1/patients/session-count`
+- **Method:** `POST`
+- **Auth Required:** Yes
+- **Controller:** `updateSessionCount`
+- **Request Body:**
+  ```json
+  {
+    "hospital_id": "string",
+    "sessionCount": "number"
+  }
+  ```
+- **Response:**
+  ```json
+  {
+    "status": "success",
+    "statusCode": 200,
+    "message": "Session count updated successfully.",
+    "data": {
+      "hospitalRecord": {
+        // Updated hospital record object
+      }
+    }
+  }
+  ```
+
+### Update Night Count
+
+- **URL:** `/api/v1/patients/night-count`
+- **Method:** `POST`
+- **Auth Required:** Yes
+- **Controller:** `updateNightCount`
+- **Request Body:**
+  ```json
+  {
+    "hospital_id": "string",
+    "nightCount": "number"
+  }
+  ```
+- **Response:**
+  ```json
+  {
+    "status": "success",
+    "statusCode": 200,
+    "message": "Night count updated successfully.",
+    "data": {
+      "hospitalRecord": {
+        // Updated hospital record object
+      }
+    }
+  }
+  ```
+
+### Update Patient Information
+
+- **URL:** `/api/v1/patients/update-patient-info`
+- **Method:** `PATCH`
+- **Auth Required:** Yes
+- **Controller:** `updatePatientInfo`
+- **Request Body:**
+  ```json
+  {
+    "hospital_id": "string",
+    "biodata": {
+      // Biodata fields to update
+    },
+    "hospitalRecord": {
+      // Hospital record fields to update
+    }
+  }
+  ```
+- **Response:**
+  ```json
+  {
+    "status": "success",
+    "statusCode": 200,
+    "message": "Patient information updated successfully.",
+    "data": {
+      "patient": {
+        // Updated patient object
+      }
+    }
+  }
+  ```
+
+### Get All Patients
+
+- **URL:** `/api/v1/patients`
+- **Method:** `GET`
+- **Auth Required:** Yes
+- **Controller:** `getAllPatients`
+- **Query Parameters:**
+  - `page`: number (optional)
+  - `limit`: number (optional)
+- **Response:**
+  ```json
+  {
+    "status": "success",
+    "statusCode": 200,
+    "message": "Patients retrieved successfully",
+    "data": {
+      "patients": [
+        // Array of patient objects
+      ],
+      "currentPage": "number",
+      "totalPages": "number",
+      "totalPatients": "number"
+    }
+  }
+  ```
+
+### Transfer Patient
+
+- **URL:** `/api/v1/patients/transfer-patient`
+- **Method:** `POST`
+- **Auth Required:** Yes
+- **Controller:** `transferPatient`
+- **Request Body:**
+  ```json
+  {
+    "hospital_id": "string",
+    "receiverStaffId": "string"
+  }
+  ```
+- **Response:**
+  ```json
+  {
+    "status": "success",
+    "statusCode": 200,
+    "message": "Patient transferred successfully",
+    "data": null
+  }
+  ```
+
+### Accept Patient
+
+- **URL:** `/api/v1/patients/accept-patient`
+- **Method:** `POST`
+- **Auth Required:** Yes
+- **Controller:** `acceptPatient`
+- **Request Body:**
+  ```json
+  {
+    "hospital_id": "string",
+    "senderStaffId": "string"
+  }
+  ```
+- **Response:**
+  ```json
+  {
+    "status": "success",
+    "statusCode": 200,
+    "message": "Patient accepted successfully",
+    "data": null
+  }
+  ```
+
+### Reject Patient
+
+- **URL:** `/api/v1/patients/reject-patient`
+- **Method:** `POST`
+- **Auth Required:** Yes
+- **Controller:** `rejectPatient`
+- **Request Body:**
+  ```json
+  {
+    "hospital_id": "string",
+    "senderStaffId": "string"
+  }
+  ```
+- **Response:**
+  ```json
+  {
+    "status": "success",
+    "statusCode": 200,
+    "message": "Patient rejected successfully",
+    "data": null
+  }
+  ```
+
+### Get Admin Jurisdiction Patients
+
+- **URL:** `/api/v1/patients/admin-jurisdiction`
+- **Method:** `GET`
+- **Auth Required:** Yes
+- **Controller:** `getAdminJurisdictionPatients`
+- **Response:**
+  ```json
+  {
+    "status": "success",
+    "statusCode": 200,
+    "message": "Patients under admin's jurisdiction retrieved successfully",
+    "data": {
+      "assignedToAdmin": [
+        // Array of patients assigned to the admin
+      ],
+      "assignedToOtherHCPs": [
+        // Array of patients assigned to other HCPs of the same profession
+      ],
+      "receivedPatients": [
+        // Array of patients received by the admin
+      ]
+    }
+  }
+  ```
+
 ## Assessment Templates
 
 ### Create Assessment Template
@@ -836,6 +1073,7 @@ Note: This action can only be performed by a Super Admin. Attempting to access t
   ```
 
 Note: The response data will vary based on the role of the user. Fields that are specific to certain roles will only be included for users with those roles.
+
 - **Request Body:**
   ```json
   {
@@ -1186,7 +1424,7 @@ Note: The login response will vary based on the type of user logging in (SuperAd
 - **URL:** `/api/v1/staff/admin-hcp/:staff_id`
 - **Method:** `DELETE`
 - **Auth Required:** Yes (Super Admin only)
-- **URL Parameters:** 
+- **URL Parameters:**
   - `staff_id`: The staff ID of the Admin Healthcare Professional to be removed
 - **Response:**
   ```json
@@ -1489,6 +1727,7 @@ Note: This action can only be performed by a Super Admin. Attempting to access t
   ```json
   {
     "status": "success",
+  ```
 - **Request Body:**
   ```json
   {
@@ -2023,6 +2262,8 @@ Note: The login response will vary based on the type of user logging in (SuperAd
     "data": {
       "treatment": {
         "_id": "string",
+  ```
+
 # CareLog API Documentation
 
 ## Table of Contents
@@ -2681,7 +2922,7 @@ All protected routes require a valid JWT token in the Authorization header.
           "address": "string"
         },
         "hospital_record": {
-          "hospital_id": "string",
+          "hospital_id": "string"
           // Other updated fields from the HospitalRecord
         }
       }

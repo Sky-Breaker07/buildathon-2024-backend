@@ -41,6 +41,25 @@ const healthCareProfessionalSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
+  receivedPatients: [{
+    patient: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'HospitalRecord',
+    },
+    receivedFrom: {
+      type: String,
+      required: true,
+    },
+    timestamp: {
+      type: Date,
+      default: Date.now,
+    },
+    status: {
+      type: String,
+      enum: ['pending', 'accepted', 'rejected'],
+      default: 'pending',
+    },
+  }],
   registeredBy: {
     type: String,
     required: true,
@@ -49,7 +68,26 @@ const healthCareProfessionalSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Organization',
     required: true,
-  }
+  },
+  sentPatients: [{
+    patient: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'HospitalRecord',
+    },
+    sentTo: {
+      type: String,
+      required: true,
+    },
+    timestamp: {
+      type: Date,
+      default: Date.now,
+    },
+    status: {
+      type: String,
+      enum: ['pending', 'accepted', 'rejected'],
+      default: 'pending',
+    },
+  }],
 });
 
 healthCareProfessionalSchema.methods.generateStaffId = async function() {
@@ -68,6 +106,9 @@ healthCareProfessionalSchema.pre('save', async function (next) {
   if (this.isModified('securityAnswer') && this.securityAnswer) {
     const salt = await bcrypt.genSalt(10);
     this.securityAnswer = await bcrypt.hash(this.securityAnswer, salt);
+  }
+  if (!this.isAdmin) {
+    this.receivedPatients = undefined;
   }
   next();
 });
