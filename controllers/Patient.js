@@ -89,44 +89,39 @@ const getPatientController = async (req, res) => {
 };
 
 const createAssessmentController = async (req, res) => {
-  const session = await mongoose.startSession();
-  session.startTransaction();
-
+  let session;
   try {
-    const { template_name, assessment_data, hospital_id } = req.body;
+    session = await mongoose.startSession();
+    session.startTransaction();
 
-    if (!template_name || !assessment_data || !hospital_id) {
-      return errorHandler(
-        res,
-        StatusCodes.BAD_REQUEST,
-        "All fields are required."
-      );
+    const { template_id, assessment_data, hospital_id } = req.body;
+
+    if (!template_id || !assessment_data || !hospital_id) {
+      throw new Error("All fields are required.");
     }
 
+console.log(assessment_data)
+
     const { assessment, hospitalRecordId } = await createAssessment(
-      template_name,
+      template_id,
       assessment_data,
-      res,
       hospital_id,
       session
     );
+
 
     const patient = await Patient.findOne({
       hospital_record: hospitalRecordId,
     }).session(session);
 
     if (!patient) {
-      await session.abortTransaction();
-      session.endSession();
-      return errorHandler(res, StatusCodes.NOT_FOUND, "Patient not found.");
+      throw new Error("Patient not found.");
     }
 
     patient.assessments.push(assessment._id);
     await patient.save({ session });
 
     await session.commitTransaction();
-    session.endSession();
-
     successHandler(
       res,
       StatusCodes.CREATED,
@@ -134,12 +129,23 @@ const createAssessmentController = async (req, res) => {
       "Assessment created successfully."
     );
   } catch (error) {
-    await session.abortTransaction();
-    session.endSession();
     console.error("Error creating assessment:", error.message);
-    errorHandler(res, StatusCodes.INTERNAL_SERVER_ERROR, "Server Error.");
+    if (session) {
+      try {
+        await session.abortTransaction();
+      } catch (abortError) {
+        console.error("Error aborting transaction:", abortError);
+      }
+    }
+    errorHandler(res, StatusCodes.INTERNAL_SERVER_ERROR, error.message || "Server Error.");
+  } finally {
+    if (session) {
+      session.endSession();
+    }
   }
 };
+
+module.exports = { createAssessmentController };
 
 const createTreatmentController = async (req, res) => {
   const session = await mongoose.startSession();

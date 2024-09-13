@@ -16,7 +16,10 @@ const assessmentSchema = new mongoose.Schema(
 
 		assessment_data: {
 			type: Map,
-			of: mongoose.Schema.Types.Mixed,
+			of: new mongoose.Schema({
+				type: Map,
+				of: mongoose.Schema.Types.Mixed,
+			}, { _id: false }),
 		},
 	},
 	{ timestamps: true }
