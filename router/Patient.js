@@ -19,7 +19,9 @@ const {
   acceptPatient,
   rejectPatient,
   getAdminJurisdictionPatients,
-  getAssignedPatients
+  getAssignedPatients,
+  createVitalSignController,
+  getPatientFullDetails
 } = require("../controllers/Patient");
 
 
@@ -29,14 +31,15 @@ router.route("/hospital-records").post(getHospitalRecordController);
 router.route("/").post(getPatientController);
 router.route("/assessment").post(createAssessmentController);
 router.route("/treatment").post(createTreatmentController);
-
 router.route("/discharge").post(createDischargeController);
 router.route("/evaluation").post(createEvaluationController);
 router.route("/mortality-status").post(updateMortalityStatus);
-router.route("/session-count").post(updateSessionCount);
-router.route("/night-count").post(updateNightCount);
+router.route("/session-count").patch(updateSessionCount);
+router.route("/night-count").patch(updateNightCount);
 router.route("/update-patient-info").patch(updatePatientInfo);
 router.route("/").get(getAllPatients);
+router.route("/vital-sign").post(createVitalSignController);
+router.route("/full-details").post(getPatientFullDetails);
 
 //protected routes
 router.use(authenticateStaff);

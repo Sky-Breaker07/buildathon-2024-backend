@@ -7,11 +7,18 @@ const vitalSignSchema = new mongoose.Schema(
 				type: Number,
 				default: null,
 			},
-
 			diastolicBP: {
 				type: Number,
 				default: null,
 			},
+		},
+		mean_arterial_pressure: {
+			type: String,
+			default: null,
+		},
+		heart_rate: {
+			type: Number,
+			default: null,
 		},
 
 		pulse_rate: {
