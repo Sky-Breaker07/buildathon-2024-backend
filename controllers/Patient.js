@@ -1,17 +1,18 @@
-const { createAssessment } = require("./Assessment");
 const HealthCareProfessional = require("../models/HealthCareProfessional");
 const HospitalRecord = require("../models/HospitalRecord");
 const BioData = require("../models/Biodata");
 const HealthInformationManager = require("../models/HealthInformationManager");
-
+const Patient = require("../models/Patient");
+const Discharge = require("../models/Discharge");
+const Evaluation = require("../models/Evaluation");
 
 const { registerPatient, getHospitalRecord, getPatient } = require("./utils");
 const mongoose = require("mongoose");
 const { errorHandler, successHandler, paginateResults } = require("../utils/utils");
 const { StatusCodes } = require("http-status-codes");
-const Patient = require("../models/Patient");
-
 const { createTreatment } = require("./Treatment");
+const { createAssessment } = require("./Assessment");
+
 
 const registerPatientController = async (req, res) => {
   try {
@@ -186,9 +187,9 @@ const createTreatmentController = async (req, res) => {
   }
 };
 
-const assignPatientToHealthcareProfessional = async (req, res) => {
+const assignPatientToHCP = async (req, res) => {
   try {
-    const { staffId, patientId } = req.body;
+    const { staffId, hospital_id } = req.body;
     const adminId = req.staff.staff_id;
 
     const admin = await HealthCareProfessional.findOne({ staff_id: adminId });
@@ -218,13 +219,18 @@ const assignPatientToHealthcareProfessional = async (req, res) => {
       );
     }
 
-    const patient = await Patient.findById(patientId);
+    const hospitalRecord = await HospitalRecord.findOne({ hospital_id });
+    if (!hospitalRecord) {
+      return errorHandler(res, StatusCodes.NOT_FOUND, "Patient not found");
+    }
+
+    const patient = await Patient.findOne({ hospital_record: hospitalRecord._id });
     if (!patient) {
       return errorHandler(res, StatusCodes.NOT_FOUND, "Patient not found");
     }
 
-    if (!hcp.patientsAssigned.includes(patient.hospital_record)) {
-      hcp.patientsAssigned.push(patient.hospital_record);
+    if (!hcp.patientsAssigned.includes(hospitalRecord._id)) {
+      hcp.patientsAssigned.push(hospitalRecord._id);
       await hcp.save();
     }
 
@@ -630,7 +636,7 @@ const transferPatient = async (req, res) => {
 
 const acceptPatient = async (req, res) => {
   try {
-    const { hospital_id, senderStaffId } = req.body;
+    const { hospital_id } = req.body;
     const receiverStaffId = req.staff.staff_id;
 
     // Check if the receiver is an admin healthcare professional
@@ -645,13 +651,17 @@ const acceptPatient = async (req, res) => {
       return errorHandler(res, StatusCodes.NOT_FOUND, "Patient not found");
     }
 
-    // Update receiver's receivedPatients
+    // Find the received patient in receiver's receivedPatients
     const receivedPatientIndex = receiver.receivedPatients.findIndex(
-      p => p.patient.toString() === hospitalRecord._id.toString() && p.receivedFrom === senderStaffId
+      p => p.patient.toString() === hospitalRecord._id.toString()
     );
     if (receivedPatientIndex === -1) {
       return errorHandler(res, StatusCodes.NOT_FOUND, "Transfer request not found");
     }
+
+    const senderStaffId = receiver.receivedPatients[receivedPatientIndex].receivedFrom;
+
+    // Update receiver's receivedPatients
     receiver.receivedPatients[receivedPatientIndex].status = 'accepted';
     await receiver.save();
 
@@ -682,7 +692,7 @@ const acceptPatient = async (req, res) => {
 
 const rejectPatient = async (req, res) => {
   try {
-    const { hospital_id, senderStaffId } = req.body;
+    const { hospital_id } = req.body;
     const receiverStaffId = req.staff.staff_id;
 
     // Check if the receiver is an admin healthcare professional
@@ -697,14 +707,16 @@ const rejectPatient = async (req, res) => {
       return errorHandler(res, StatusCodes.NOT_FOUND, "Patient not found");
     }
 
-    // Update receiver's receivedPatients
+    // Find and remove the patient from receiver's receivedPatients
     const receivedPatientIndex = receiver.receivedPatients.findIndex(
-      p => p.patient.toString() === hospitalRecord._id.toString() && p.receivedFrom === senderStaffId
+      p => p.patient.toString() === hospitalRecord._id.toString()
     );
     if (receivedPatientIndex === -1) {
       return errorHandler(res, StatusCodes.NOT_FOUND, "Transfer request not found");
     }
-    receiver.receivedPatients[receivedPatientIndex].status = 'rejected';
+
+    const senderStaffId = receiver.receivedPatients[receivedPatientIndex].receivedFrom;
+    receiver.receivedPatients.splice(receivedPatientIndex, 1);
     await receiver.save();
 
     // Update sender's sentPatients
@@ -725,7 +737,7 @@ const rejectPatient = async (req, res) => {
       }
     }
 
-    successHandler(res, StatusCodes.OK, { message: "Patient rejected successfully" });
+    successHandler(res, StatusCodes.OK, { message: "Patient rejected and removed successfully" });
   } catch (error) {
     console.error(error);
     errorHandler(res, StatusCodes.INTERNAL_SERVER_ERROR, "Server Error");
@@ -822,13 +834,58 @@ const getAdminJurisdictionPatients = async (req, res) => {
   }
 };
 
+const getAssignedPatients = async (req, res) => {
+  try {
+    const staffId = req.staff.staff_id;
+
+    // Find the healthcare professional
+    const hcp = await HealthCareProfessional.findOne({ staff_id: staffId });
+    if (!hcp) {
+      return errorHandler(res, StatusCodes.NOT_FOUND, "Healthcare professional not found");
+    }
+
+    // Get all patients assigned to this healthcare professional
+    const patients = await Patient.find({ 'hospital_record': { $in: hcp.patientsAssigned } })
+      .populate('biodata')
+      .populate('hospital_record')
+      .populate('assessments')
+      .populate('treatments')
+      .populate('discharges')
+      .populate('evaluations');
+
+    // Format the patient data similar to getPatientController
+    const formattedPatients = patients.map(patient => ({
+      _id: patient._id,
+      biodata: patient.biodata,
+      hospital_record: patient.hospital_record,
+      assessments: patient.assessments,
+      treatments: patient.treatments,
+      discharges: patient.discharges,
+      evaluations: patient.evaluations
+    }));
+
+    successHandler(
+      res,
+      StatusCodes.OK,
+      formattedPatients,
+      "Assigned patients fetched successfully."
+    );
+
+    console.log(formattedPatients)
+  } catch (error) {
+    console.error(error);
+    errorHandler(res, StatusCodes.INTERNAL_SERVER_ERROR, "Server Error.");
+  }
+};
+
+
 module.exports = {
   registerPatientController,
   getHospitalRecordController,
   getPatientController,
   createAssessmentController,
   createTreatmentController,
-  assignPatientToHealthcareProfessional,
+  assignPatientToHCP,
   updateSessionCount,
   updateNightCount,
   updateMortalityStatus,
@@ -840,4 +897,5 @@ module.exports = {
   acceptPatient,
   rejectPatient,
   getAdminJurisdictionPatients,
+  getAssignedPatients
 };
