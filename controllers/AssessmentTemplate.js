@@ -2,61 +2,88 @@ const AssessmentTemplate = require("../models/AssessmentTemplate");
 const { StatusCodes } = require("http-status-codes");
 const { errorHandler, successHandler, paginateResults } = require("../utils/utils");
 
+const validateFields = (fields) => {
+  if (typeof fields !== "object" || Object.keys(fields).length === 0) {
+    throw new Error("Fields must be a non-empty object");
+  }
+
+  for (const [sectionName, sectionFields] of Object.entries(fields)) {
+    if (typeof sectionFields !== "object" || Object.keys(sectionFields).length === 0) {
+      throw new Error(`Section ${sectionName} must be a non-empty object`);
+    }
+
+    for (const [fieldName, fieldProps] of Object.entries(sectionFields)) {
+      if (typeof fieldProps !== "object" || !fieldProps.type || !fieldProps.label) {
+        throw new Error(`Field ${fieldName} in section ${sectionName} is invalid`);
+      }
+    }
+  }
+};
+
 const createAssessmentTemplate = async (req, res) => {
   try {
     const { name, profession, description, fields } = req.body;
 
-    if (typeof fields !== "object" || Object.keys(fields).length === 0) {
-      return errorHandler(
-        res,
-        StatusCodes.BAD_REQUEST,
-        "Fields must be a non-empty object"
-      );
+    console.log("Received fields:", JSON.stringify(fields, null, 2));
+
+    // Convert the fields object to a nested Map structure
+    const fieldsMap = new Map();
+    for (const [sectionKey, sectionValue] of Object.entries(fields)) {
+      fieldsMap.set(sectionKey, new Map(Object.entries(sectionValue)));
     }
 
-    const processedFields = new Map();
-    for (const [fieldName, fieldProps] of Object.entries(fields)) {
-      processedFields.set(fieldName, {
-        type: fieldProps.type,
-        required: fieldProps.required || false,
-        options: fieldProps.options || [],
-        label: fieldProps.label,
-        placeholder: fieldProps.placeholder,
-        defaultValue: fieldProps.defaultValue,
-      });
-    }
-
-    const template = new AssessmentTemplate({
+    const newTemplate = new AssessmentTemplate({
       name,
       profession,
       description,
-      fields: processedFields,
+      fields: fieldsMap,
     });
 
-    await template.save();
+    const savedTemplate = await newTemplate.save();
 
-    successHandler(
-      res,
-      StatusCodes.CREATED,
-      template,
-      "Assessment template was created successfully"
+    // Convert fields back to a plain object for the response
+    const formattedTemplate = savedTemplate.toObject();
+    formattedTemplate.fields = Object.fromEntries(
+      Array.from(formattedTemplate.fields, ([sectionKey, sectionValue]) => [
+        sectionKey,
+        Object.fromEntries(sectionValue),
+      ])
     );
+
+    console.log("Saved template:", JSON.stringify(formattedTemplate, null, 2));
+
+    res.status(StatusCodes.CREATED).json(formattedTemplate);
   } catch (error) {
     console.error(error);
-    errorHandler(res, StatusCodes.INTERNAL_SERVER_ERROR, "Server Error");
+    errorHandler(res, StatusCodes.BAD_REQUEST, error.message);
   }
 };
 
 const getAssessmentTemplate = async (req, res) => {
-  const { id } = req.params;
-  if (!id) {
-    return errorHandler(res, StatusCodes.BAD_REQUEST, "No ID provided");
-  }
   try {
-    const assessmentTemplate = await AssessmentTemplate.findById(id);
-    res.status(StatusCodes.OK).json({ assessmentTemplate });
+    const { id } = req.params;
+    const template = await AssessmentTemplate.findById(id).lean();
+
+    if (!template) {
+      return errorHandler(res, StatusCodes.NOT_FOUND, "Template not found");
+    }
+
+    // Convert fields Map to a plain object
+    const formattedFields = {};
+    for (const [sectionKey, sectionValue] of Object.entries(template.fields || {})) {
+      formattedFields[sectionKey] = {};
+      for (const [fieldKey, fieldValue] of Object.entries(sectionValue || {})) {
+        formattedFields[sectionKey][fieldKey] = fieldValue;
+      }
+    }
+    template.fields = formattedFields;
+
+    console.log('Formatted template:', JSON.stringify(template, null, 2));
+
+    res.status(StatusCodes.OK).json(template);
   } catch (error) {
-    errorHandler(res, StatusCodes.INTERNAL_SERVER_ERROR, error.message);
+    console.error(error);
+    errorHandler(res, StatusCodes.INTERNAL_SERVER_ERROR, "Server Error");
   }
 };
 
@@ -80,29 +107,29 @@ const getAssessmentTemplatesByProfession = async (req, res) => {
 
 const getAllAssessmentTemplates = async (req, res) => {
   try {
-    const { page, limit } = req.query;
-    const { pageNumber, pageSize, skip } = paginateResults(page, limit);
+    const templates = await AssessmentTemplate.find().lean();
 
-    const totalTemplates = await AssessmentTemplate.countDocuments();
-    const assessmentTemplates = await AssessmentTemplate.find()
-      .skip(skip)
-      .limit(pageSize);
+    // Convert fields Map to a plain object for each template
+    const formattedTemplates = templates.map(template => {
+      const formattedFields = {};
+      for (const [sectionKey, sectionValue] of Object.entries(template.fields || {})) {
+        formattedFields[sectionKey] = {};
+        for (const [fieldKey, fieldValue] of Object.entries(sectionValue || {})) {
+          formattedFields[sectionKey][fieldKey] = fieldValue;
+        }
+      }
+      return {
+        ...template,
+        fields: formattedFields
+      };
+    });
 
-    const totalPages = Math.ceil(totalTemplates / pageSize);
+    console.log('Formatted templates:', JSON.stringify(formattedTemplates, null, 2));
 
-    successHandler(
-      res,
-      StatusCodes.OK,
-      {
-        assessmentTemplates,
-        currentPage: pageNumber,
-        totalPages,
-        totalTemplates,
-      },
-      "Assessment templates retrieved successfully"
-    );
+    res.status(StatusCodes.OK).json({ assessmentTemplates: formattedTemplates });
   } catch (error) {
-    errorHandler(res, StatusCodes.INTERNAL_SERVER_ERROR, error.message);
+    console.error(error);
+    errorHandler(res, StatusCodes.INTERNAL_SERVER_ERROR, "Server Error");
   }
 };
 
@@ -125,25 +152,7 @@ const updateAssessmentTemplate = async (req, res) => {
     if (profession) existingTemplate.profession = profession;
     if (description) existingTemplate.description = description;
     if (isActive !== undefined) existingTemplate.isActive = isActive;
-
-    if (
-      fields &&
-      typeof fields === "object" &&
-      Object.keys(fields).length > 0
-    ) {
-      const processedFields = new Map();
-      for (const [fieldName, fieldProps] of Object.entries(fields)) {
-        processedFields.set(fieldName, {
-          type: fieldProps.type,
-          required: fieldProps.required || false,
-          options: fieldProps.options || [],
-          label: fieldProps.label,
-          placeholder: fieldProps.placeholder,
-          defaultValue: fieldProps.defaultValue,
-        });
-      }
-      existingTemplate.fields = processedFields;
-    }
+    if (fields) existingTemplate.fields = fields;
 
     await existingTemplate.save();
 

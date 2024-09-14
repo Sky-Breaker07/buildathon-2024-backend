@@ -49,6 +49,13 @@ const patientSchema = new mongoose.Schema({
 			ref: 'Evaluation',
 		},
 	],
+
+	referrals: [
+		{
+			type: mongoose.Schema.Types.ObjectId,
+			ref: 'Referral'
+		}
+	]
 });
 
 // Add indexes

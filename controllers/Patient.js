@@ -20,6 +20,9 @@ const {
 const { StatusCodes } = require("http-status-codes");
 const { createTreatment } = require("./Treatment");
 const { createAssessment } = require("./Assessment");
+const { createDischarge } = require("./Discharge");
+const { createEvaluation } = require("./Evaluation");
+const { createReferral } = require("./Referral");
 
 const registerPatientController = async (req, res) => {
   try {
@@ -89,24 +92,22 @@ const getPatientController = async (req, res) => {
 };
 
 const createAssessmentController = async (req, res) => {
-  const session = await mongoose.startSession();
-  session.startTransaction();
-
+  let session;
   try {
-    const { template_name, assessment_data, hospital_id } = req.body;
+    session = await mongoose.startSession();
+    session.startTransaction();
 
-    if (!template_name || !assessment_data || !hospital_id) {
-      return errorHandler(
-        res,
-        StatusCodes.BAD_REQUEST,
-        "All fields are required."
-      );
+    const { template_id, assessment_data, hospital_id } = req.body;
+
+    if (!template_id || !assessment_data || !hospital_id) {
+      throw new Error("All fields are required.");
     }
 
+    console.log("Received assessment_data:", JSON.stringify(assessment_data, null, 2));
+
     const { assessment, hospitalRecordId } = await createAssessment(
-      template_name,
+      template_id,
       assessment_data,
-      res,
       hospital_id,
       session
     );
@@ -116,17 +117,13 @@ const createAssessmentController = async (req, res) => {
     }).session(session);
 
     if (!patient) {
-      await session.abortTransaction();
-      session.endSession();
-      return errorHandler(res, StatusCodes.NOT_FOUND, "Patient not found.");
+      throw new Error("Patient not found.");
     }
 
     patient.assessments.push(assessment._id);
     await patient.save({ session });
 
     await session.commitTransaction();
-    session.endSession();
-
     successHandler(
       res,
       StatusCodes.CREATED,
@@ -134,32 +131,39 @@ const createAssessmentController = async (req, res) => {
       "Assessment created successfully."
     );
   } catch (error) {
-    await session.abortTransaction();
-    session.endSession();
     console.error("Error creating assessment:", error.message);
-    errorHandler(res, StatusCodes.INTERNAL_SERVER_ERROR, "Server Error.");
+    if (session) {
+      try {
+        await session.abortTransaction();
+      } catch (abortError) {
+        console.error("Error aborting transaction:", abortError);
+      }
+    }
+    errorHandler(res, StatusCodes.INTERNAL_SERVER_ERROR, error.message || "Server Error.");
+  } finally {
+    if (session) {
+      session.endSession();
+    }
   }
 };
 
 const createTreatmentController = async (req, res) => {
-  const session = await mongoose.startSession();
-  session.startTransaction();
-
+  let session;
   try {
-    const { template_name, treatment_data, hospital_id } = req.body;
+    session = await mongoose.startSession();
+    session.startTransaction();
 
-    if (!template_name || !treatment_data || !hospital_id) {
-      return errorHandler(
-        res,
-        StatusCodes.BAD_REQUEST,
-        "All fields are required."
-      );
+    const { template_id, treatment_data, hospital_id } = req.body;
+
+    if (!template_id || !treatment_data || !hospital_id) {
+      throw new Error("All fields are required.");
     }
 
+    console.log("Received treatment_data:", JSON.stringify(treatment_data, null, 2));
+
     const { treatment, hospitalRecordId } = await createTreatment(
-      template_name,
+      template_id,
       treatment_data,
-      res,
       hospital_id,
       session
     );
@@ -169,17 +173,13 @@ const createTreatmentController = async (req, res) => {
     }).session(session);
 
     if (!patient) {
-      await session.abortTransaction();
-      session.endSession();
-      return errorHandler(res, StatusCodes.NOT_FOUND, "Patient not found.");
+      throw new Error("Patient not found.");
     }
 
     patient.treatments.push(treatment._id);
     await patient.save({ session });
 
     await session.commitTransaction();
-    session.endSession();
-
     successHandler(
       res,
       StatusCodes.CREATED,
@@ -187,10 +187,75 @@ const createTreatmentController = async (req, res) => {
       "Treatment created successfully."
     );
   } catch (error) {
-    await session.abortTransaction();
-    session.endSession();
     console.error("Error creating treatment:", error.message);
-    errorHandler(res, StatusCodes.INTERNAL_SERVER_ERROR, "Server Error.");
+    if (session) {
+      try {
+        await session.abortTransaction();
+      } catch (abortError) {
+        console.error("Error aborting transaction:", abortError);
+      }
+    }
+    errorHandler(res, StatusCodes.INTERNAL_SERVER_ERROR, error.message || "Server Error.");
+  } finally {
+    if (session) {
+      session.endSession();
+    }
+  }
+};
+
+const createReferralController = async (req, res) => {
+  let session;
+  try {
+    session = await mongoose.startSession();
+    session.startTransaction();
+
+    const { template_id, referral_data, hospital_id } = req.body;
+
+    if (!template_id || !referral_data || !hospital_id) {
+      throw new Error("All fields are required.");
+    }
+
+    console.log("Received referral_data:", JSON.stringify(referral_data, null, 2));
+
+    const { referral, hospitalRecordId } = await createReferral(
+      template_id,
+      referral_data,
+      hospital_id,
+      session
+    );
+
+    const patient = await Patient.findOne({
+      hospital_record: hospitalRecordId,
+    }).session(session);
+
+    if (!patient) {
+      throw new Error("Patient not found.");
+    }
+
+    patient.referrals.push(referral._id);
+    await patient.save({ session });
+
+    await session.commitTransaction();
+    successHandler(
+      res,
+      StatusCodes.CREATED,
+      referral,
+      "Referral created successfully."
+    );
+  } catch (error) {
+    console.error("Error creating referral:", error.message);
+    if (session) {
+      try {
+        await session.abortTransaction();
+      } catch (abortError) {
+        console.error("Error aborting transaction:", abortError);
+      }
+    }
+    errorHandler(res, StatusCodes.INTERNAL_SERVER_ERROR, error.message || "Server Error.");
+  } finally {
+    if (session) {
+      session.endSession();
+    }
   }
 };
 
@@ -375,24 +440,22 @@ const updateMortalityStatus = async (req, res) => {
 };
 
 const createDischargeController = async (req, res) => {
-  const session = await mongoose.startSession();
-  session.startTransaction();
-
+  let session;
   try {
-    const { template_name, discharge_data, hospital_id } = req.body;
+    session = await mongoose.startSession();
+    session.startTransaction();
 
-    if (!template_name || !discharge_data || !hospital_id) {
-      return errorHandler(
-        res,
-        StatusCodes.BAD_REQUEST,
-        "All fields are required."
-      );
+    const { template_id, discharge_data, hospital_id } = req.body;
+
+    if (!template_id || !discharge_data || !hospital_id) {
+      throw new Error("All fields are required.");
     }
 
+    console.log("Received discharge_data:", JSON.stringify(discharge_data, null, 2));
+
     const { discharge, hospitalRecordId } = await createDischarge(
-      template_name,
+      template_id,
       discharge_data,
-      res,
       hospital_id,
       session
     );
@@ -402,17 +465,13 @@ const createDischargeController = async (req, res) => {
     }).session(session);
 
     if (!patient) {
-      await session.abortTransaction();
-      session.endSession();
-      return errorHandler(res, StatusCodes.NOT_FOUND, "Patient not found.");
+      throw new Error("Patient not found.");
     }
 
     patient.discharges.push(discharge._id);
     await patient.save({ session });
 
     await session.commitTransaction();
-    session.endSession();
-
     successHandler(
       res,
       StatusCodes.CREATED,
@@ -420,31 +479,39 @@ const createDischargeController = async (req, res) => {
       "Discharge created successfully."
     );
   } catch (error) {
-    await session.abortTransaction();
-    session.endSession();
-    errorHandler(res, StatusCodes.INTERNAL_SERVER_ERROR, "Server Error.");
+    console.error("Error creating discharge:", error.message);
+    if (session) {
+      try {
+        await session.abortTransaction();
+      } catch (abortError) {
+        console.error("Error aborting transaction:", abortError);
+      }
+    }
+    errorHandler(res, StatusCodes.INTERNAL_SERVER_ERROR, error.message || "Server Error.");
+  } finally {
+    if (session) {
+      session.endSession();
+    }
   }
 };
 
 const createEvaluationController = async (req, res) => {
-  const session = await mongoose.startSession();
-  session.startTransaction();
-
+  let session;
   try {
-    const { template_name, evaluation_data, hospital_id } = req.body;
+    session = await mongoose.startSession();
+    session.startTransaction();
 
-    if (!template_name || !evaluation_data || !hospital_id) {
-      return errorHandler(
-        res,
-        StatusCodes.BAD_REQUEST,
-        "All fields are required."
-      );
+    const { template_id, evaluation_data, hospital_id } = req.body;
+
+    if (!template_id || !evaluation_data || !hospital_id) {
+      throw new Error("All fields are required.");
     }
 
+    console.log("Received evaluation_data:", JSON.stringify(evaluation_data, null, 2));
+
     const { evaluation, hospitalRecordId } = await createEvaluation(
-      template_name,
+      template_id,
       evaluation_data,
-      res,
       hospital_id,
       session
     );
@@ -454,17 +521,13 @@ const createEvaluationController = async (req, res) => {
     }).session(session);
 
     if (!patient) {
-      await session.abortTransaction();
-      session.endSession();
-      return errorHandler(res, StatusCodes.NOT_FOUND, "Patient not found.");
+      throw new Error("Patient not found.");
     }
 
     patient.evaluations.push(evaluation._id);
     await patient.save({ session });
 
     await session.commitTransaction();
-    session.endSession();
-
     successHandler(
       res,
       StatusCodes.CREATED,
@@ -472,9 +535,19 @@ const createEvaluationController = async (req, res) => {
       "Evaluation created successfully."
     );
   } catch (error) {
-    await session.abortTransaction();
-    session.endSession();
-    errorHandler(res, StatusCodes.INTERNAL_SERVER_ERROR, "Server Error.");
+    console.error("Error creating evaluation:", error.message);
+    if (session) {
+      try {
+        await session.abortTransaction();
+      } catch (abortError) {
+        console.error("Error aborting transaction:", abortError);
+      }
+    }
+    errorHandler(res, StatusCodes.INTERNAL_SERVER_ERROR, error.message || "Server Error.");
+  } finally {
+    if (session) {
+      session.endSession();
+    }
   }
 };
 
@@ -1053,8 +1126,6 @@ const createVitalSignController = async (req, res) => {
   }
 };
 
-// ... existing imports ...
-
 const getPatientFullDetails = async (req, res) => {
   try {
     const { hospital_id } = req.body;
@@ -1111,9 +1182,6 @@ const getPatientFullDetails = async (req, res) => {
   }
 };
 
-
-
-
 module.exports = {
   registerPatientController,
   getHospitalRecordController,
@@ -1126,6 +1194,7 @@ module.exports = {
   updateMortalityStatus,
   createDischargeController,
   createEvaluationController,
+  createReferralController,
   getAllPatients,
   updatePatientInfo,
   transferPatient,

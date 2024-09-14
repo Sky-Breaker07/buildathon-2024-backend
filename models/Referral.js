@@ -1,10 +1,10 @@
 const mongoose = require('mongoose');
 
-const treatmentSchema = new mongoose.Schema(
+const referralSchema = new mongoose.Schema(
 	{
 		template: {
 			type: mongoose.Schema.Types.ObjectId,
-			ref: 'TreatmentTemplate',
+			ref: 'ReferralTemplate',
 			required: true,
 		},
 
@@ -14,7 +14,7 @@ const treatmentSchema = new mongoose.Schema(
 			required: true,
 		},
 
-		treatment_data: {
+		referral_data: {
 			type: mongoose.Schema.Types.Mixed,
 			required: true,
 		},
@@ -23,10 +23,10 @@ const treatmentSchema = new mongoose.Schema(
 );
 
 // Add indexes
-treatmentSchema.index({ template: 1 });
-treatmentSchema.index({ hospital_record: 1 });
-treatmentSchema.index({ createdAt: -1 });
+referralSchema.index({ template: 1 });
+referralSchema.index({ hospital_record: 1 });
+referralSchema.index({ createdAt: -1 });
 
-const Treatment = mongoose.model('Treatment', treatmentSchema);
+const Referral = mongoose.model('Referral', referralSchema);
 
-module.exports = Treatment;
+module.exports = Referral;

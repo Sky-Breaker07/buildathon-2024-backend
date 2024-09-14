@@ -42,6 +42,42 @@ const getPatient = async (hospital_id, res) => {
 						select: 'name profession -_id',
 					},
 				],
+			}).populate({
+				path: 'treatments',
+				select: '-hospital_record -_id',
+				populate: [
+					{
+						path: 'template',
+						select: 'name profession -_id',
+					},
+				],
+			}).populate({
+				path: 'evaluations',
+				select: '-hospital_record -_id',
+				populate: [
+					{
+						path: 'template',
+						select: 'name profession -_id',
+					},
+				],
+			}).populate({
+				path: 'evaluations',
+				select: '-hospital_record -_id',
+				populate: [
+					{
+						path: 'template',
+						select: 'name profession -_id',
+					},
+				],
+			}).populate({
+				path: 'referrals',
+				select: '-hospital_record -_id',
+				populate: [
+					{
+						path: 'template',
+						select: 'name profession -_id',
+					},
+				],
 			})
 			.orFail()
 			.exec();

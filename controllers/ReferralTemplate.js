@@ -1,8 +1,8 @@
-const DischargeTemplate = require("../models/DischargeTemplate");
+const ReferralTemplate = require("../models/ReferralTemplate");
 const { StatusCodes } = require("http-status-codes");
 const { errorHandler, successHandler, paginateResults } = require("../utils/utils");
 
-const createDischargeTemplate = async (req, res) => {
+const createReferralTemplate = async (req, res) => {
   try {
     const { name, profession, description, fields } = req.body;
 
@@ -14,7 +14,7 @@ const createDischargeTemplate = async (req, res) => {
       fieldsMap.set(sectionKey, new Map(Object.entries(sectionValue)));
     }
 
-    const newTemplate = new DischargeTemplate({
+    const newTemplate = new ReferralTemplate({
       name,
       profession,
       description,
@@ -41,10 +41,10 @@ const createDischargeTemplate = async (req, res) => {
   }
 };
 
-const getDischargeTemplate = async (req, res) => {
+const getReferralTemplate = async (req, res) => {
   try {
     const { id } = req.params;
-    const template = await DischargeTemplate.findById(id).lean();
+    const template = await ReferralTemplate.findById(id).lean();
 
     if (!template) {
       return errorHandler(res, StatusCodes.NOT_FOUND, "Template not found");
@@ -69,27 +69,27 @@ const getDischargeTemplate = async (req, res) => {
   }
 };
 
-const getDischargeTemplatesByProfession = async (req, res) => {
+const getReferralTemplatesByProfession = async (req, res) => {
   const { profession } = req.params;
 
   try {
-    const dischargeTemplates = await DischargeTemplate.find({ profession });
+    const referralTemplates = await ReferralTemplate.find({ profession });
 
-    if (dischargeTemplates.length === 0) {
+    if (referralTemplates.length === 0) {
       return res.status(StatusCodes.NOT_FOUND).json({
-        message: "No discharge templates found for this profession",
+        message: "No referral templates found for this profession",
       });
     }
 
-    res.status(StatusCodes.OK).json({ dischargeTemplates });
+    res.status(StatusCodes.OK).json({ referralTemplates });
   } catch (error) {
     errorHandler(res, StatusCodes.INTERNAL_SERVER_ERROR, error.message);
   }
 };
 
-const getAllDischargeTemplates = async (req, res) => {
+const getAllReferralTemplates = async (req, res) => {
   try {
-    const templates = await DischargeTemplate.find().lean();
+    const templates = await ReferralTemplate.find().lean();
 
     // Convert fields Map to a plain object for each template
     const formattedTemplates = templates.map(template => {
@@ -108,25 +108,25 @@ const getAllDischargeTemplates = async (req, res) => {
 
     console.log('Formatted templates:', JSON.stringify(formattedTemplates, null, 2));
 
-    res.status(StatusCodes.OK).json({ dischargeTemplates: formattedTemplates });
+    res.status(StatusCodes.OK).json({ referralTemplates: formattedTemplates });
   } catch (error) {
     console.error(error);
     errorHandler(res, StatusCodes.INTERNAL_SERVER_ERROR, "Server Error");
   }
 };
 
-const updateDischargeTemplate = async (req, res) => {
+const updateReferralTemplate = async (req, res) => {
   try {
     const { id } = req.params;
     const { name, profession, description, fields, isActive } = req.body;
 
-    const existingTemplate = await DischargeTemplate.findById(id);
+    const existingTemplate = await ReferralTemplate.findById(id);
 
     if (!existingTemplate) {
       return errorHandler(
         res,
         StatusCodes.NOT_FOUND,
-        "Discharge template not found"
+        "Referral template not found"
       );
     }
 
@@ -142,7 +142,7 @@ const updateDischargeTemplate = async (req, res) => {
       res,
       StatusCodes.OK,
       existingTemplate,
-      "Discharge template updated successfully"
+      "Referral template updated successfully"
     );
   } catch (error) {
     console.error(error);
@@ -151,9 +151,9 @@ const updateDischargeTemplate = async (req, res) => {
 };
 
 module.exports = {
-	createDischargeTemplate,
-	getDischargeTemplate,
-	getDischargeTemplatesByProfession,
-	getAllDischargeTemplates,
-	updateDischargeTemplate,
+	createReferralTemplate,
+	getReferralTemplate,
+	getReferralTemplatesByProfession,
+	getAllReferralTemplates,
+	updateReferralTemplate,
 }

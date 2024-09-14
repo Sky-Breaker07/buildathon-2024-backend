@@ -1,51 +1,72 @@
 const mongoose = require('mongoose');
 
+const fieldSchema = new mongoose.Schema(
+	{
+		type: {
+			type: String,
+			enum: [
+				'String',
+				'Number',
+				'Boolean',
+				'Array',
+				'Date',
+				'Object',
+			],
+			required: true,
+		},
+
+		required: {
+			type: Boolean,
+			default: false,
+		},
+
+		options: [String],
+
+		label: {
+			type: String,
+			required: true,
+		},
+
+		placeholder: String,
+
+		defaultValue: mongoose.Schema.Types.Mixed,
+	},
+	{ _id: false }
+);
+
 const referralTemplateSchema = new mongoose.Schema(
-  {
-    name: {
-      type: String,
-      required: true,
-      trim: true,
-    },
-    profession: {
-      type: String,
-      required: true,
-      trim: true,
-    },
-    description: {
-      type: String,
-      trim: true,
-    },
-    fields: {
-      type: Map,
-      of: new mongoose.Schema(
-        {
-          type: {
-            type: String,
-            enum: ['String', 'Number', 'Boolean', 'Array', 'Date', 'Object'],
-            required: true,
-          },
-          required: {
-            type: Boolean,
-            default: false,
-          },
-          options: [String],
-          label: {
-            type: String,
-            required: true,
-          },
-          placeholder: String,
-          defaultValue: mongoose.Schema.Types.Mixed,
-        },
-        { _id: false }
-      ),
-    },
-    isActive: {
-      type: Boolean,
-      default: true,
-    },
-  },
-  { timestamps: true }
+	{
+		name: {
+			type: String,
+			required: true,
+			trim: true,
+		},
+
+		profession: {
+			type: String,
+			required: true,
+			trim: true,
+		},
+
+		description: {
+			type: String,
+			trim: true,
+		},
+
+		fields: {
+			type: Map,
+			of: {
+				type: Map,
+				of: fieldSchema,
+			},
+		},
+
+		isActive: {
+			type: Boolean,
+			default: true,
+		},
+	},
+	{ timestamps: true }
 );
 
 // Compound index for name and profession
@@ -54,6 +75,13 @@ referralTemplateSchema.index({ name: 1, profession: 1 }, { unique: true });
 // Text index for improved search capabilities
 referralTemplateSchema.index({ name: 'text', description: 'text' });
 
-const ReferralTemplate = mongoose.model('ReferralTemplate', referralTemplateSchema);
+// Additional indexes
+referralTemplateSchema.index({ profession: 1 });
+referralTemplateSchema.index({ isActive: 1 });
+
+const ReferralTemplate = mongoose.model(
+	'ReferralTemplate',
+	referralTemplateSchema
+);
 
 module.exports = ReferralTemplate;

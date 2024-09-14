@@ -1,5 +1,39 @@
 const mongoose = require('mongoose');
 
+const fieldSchema = new mongoose.Schema(
+	{
+		type: {
+			type: String,
+			enum: [
+				'String',
+				'Number',
+				'Boolean',
+				'Array',
+				'Date',
+				'Object',
+			],
+			required: true,
+		},
+
+		required: {
+			type: Boolean,
+			default: false,
+		},
+
+		options: [String],
+
+		label: {
+			type: String,
+			required: true,
+		},
+
+		placeholder: String,
+
+		defaultValue: mongoose.Schema.Types.Mixed,
+	},
+	{ _id: false }
+);
+
 const assessmentTemplateSchema = new mongoose.Schema(
 	{
 		name: {
@@ -21,39 +55,10 @@ const assessmentTemplateSchema = new mongoose.Schema(
 
 		fields: {
 			type: Map,
-			of: new mongoose.Schema(
-				{
-					type: {
-						type: String,
-						enum: [
-							'String',
-							'Number',
-							'Boolean',
-							'Array',
-							'Date',
-							'Object',
-						],
-						required: true,
-					},
-
-					required: {
-						type: Boolean,
-						default: false,
-					},
-
-					options: [String],
-
-					label: {
-						type: String,
-						required: true,
-					},
-
-					placeholder: String,
-
-					defaultValue: mongoose.Schema.Types.Mixed,
-				},
-				{ _id: false }
-			),
+			of: {
+				type: Map,
+				of: fieldSchema,
+			},
 		},
 
 		isActive: {
