@@ -6,8 +6,16 @@ const Patient = require("../models/Patient");
 const Discharge = require("../models/Discharge");
 const Evaluation = require("../models/Evaluation");
 const Assessment = require("../models/Assessment");
-const Treatment = require("../models/Treatment")
+const Treatment = require("../models/Treatment");
 const VitalSign = require("../models/VitalSign");
+const {
+  parse,
+  isValid,
+  format,
+  isFuture,
+  isEqual,
+  startOfDay,
+} = require("date-fns");
 
 const { registerPatient, getHospitalRecord, getPatient } = require("./utils");
 const mongoose = require("mongoose");
@@ -26,7 +34,12 @@ const { createReferral } = require("./Referral");
 
 const registerPatientController = async (req, res) => {
   try {
-    const { hospitalRecord } = await registerPatient(req.body);
+    const { bioDataInfo, appointmentInfo, patientType } = req.body;
+    const { hospitalRecord } = await registerPatient(
+      bioDataInfo,
+      appointmentInfo,
+      patientType
+    );
 
     successHandler(
       res,
@@ -103,7 +116,10 @@ const createAssessmentController = async (req, res) => {
       throw new Error("All fields are required.");
     }
 
-    console.log("Received assessment_data:", JSON.stringify(assessment_data, null, 2));
+    console.log(
+      "Received assessment_data:",
+      JSON.stringify(assessment_data, null, 2)
+    );
 
     const { assessment, hospitalRecordId } = await createAssessment(
       template_id,
@@ -139,7 +155,11 @@ const createAssessmentController = async (req, res) => {
         console.error("Error aborting transaction:", abortError);
       }
     }
-    errorHandler(res, StatusCodes.INTERNAL_SERVER_ERROR, error.message || "Server Error.");
+    errorHandler(
+      res,
+      StatusCodes.INTERNAL_SERVER_ERROR,
+      error.message || "Server Error."
+    );
   } finally {
     if (session) {
       session.endSession();
@@ -159,7 +179,10 @@ const createTreatmentController = async (req, res) => {
       throw new Error("All fields are required.");
     }
 
-    console.log("Received treatment_data:", JSON.stringify(treatment_data, null, 2));
+    console.log(
+      "Received treatment_data:",
+      JSON.stringify(treatment_data, null, 2)
+    );
 
     const { treatment, hospitalRecordId } = await createTreatment(
       template_id,
@@ -195,7 +218,11 @@ const createTreatmentController = async (req, res) => {
         console.error("Error aborting transaction:", abortError);
       }
     }
-    errorHandler(res, StatusCodes.INTERNAL_SERVER_ERROR, error.message || "Server Error.");
+    errorHandler(
+      res,
+      StatusCodes.INTERNAL_SERVER_ERROR,
+      error.message || "Server Error."
+    );
   } finally {
     if (session) {
       session.endSession();
@@ -215,7 +242,10 @@ const createReferralController = async (req, res) => {
       throw new Error("All fields are required.");
     }
 
-    console.log("Received referral_data:", JSON.stringify(referral_data, null, 2));
+    console.log(
+      "Received referral_data:",
+      JSON.stringify(referral_data, null, 2)
+    );
 
     const { referral, hospitalRecordId } = await createReferral(
       template_id,
@@ -251,7 +281,11 @@ const createReferralController = async (req, res) => {
         console.error("Error aborting transaction:", abortError);
       }
     }
-    errorHandler(res, StatusCodes.INTERNAL_SERVER_ERROR, error.message || "Server Error.");
+    errorHandler(
+      res,
+      StatusCodes.INTERNAL_SERVER_ERROR,
+      error.message || "Server Error."
+    );
   } finally {
     if (session) {
       session.endSession();
@@ -315,6 +349,71 @@ const assignPatientToHCP = async (req, res) => {
       res,
       StatusCodes.INTERNAL_SERVER_ERROR,
       "Failed to assign patient"
+    );
+  }
+};
+
+const unassignPatientFromHCP = async (req, res) => {
+  try {
+    const { staffId, hospital_id } = req.body;
+    const adminId = req.staff.staff_id;
+
+    // Check if the requester is an admin
+    const admin = await HealthCareProfessional.findOne({ staff_id: adminId });
+    if (!admin || !admin.isAdmin) {
+      return errorHandler(
+        res,
+        StatusCodes.FORBIDDEN,
+        "Only admins can unassign patients"
+      );
+    }
+
+    // Find the HCP
+    const hcp = await HealthCareProfessional.findOne({ staff_id: staffId });
+    if (!hcp) {
+      return errorHandler(
+        res,
+        StatusCodes.NOT_FOUND,
+        "Healthcare professional not found"
+      );
+    }
+
+    // Check if the admin and the healthcare professional are of the same profession
+    if (admin.profession !== hcp.profession) {
+      return errorHandler(
+        res,
+        StatusCodes.FORBIDDEN,
+        "You can only unassign patients from professionals in your own profession"
+      );
+    }
+
+    // Find the hospital record
+    const hospitalRecord = await HospitalRecord.findOne({ hospital_id });
+    if (!hospitalRecord) {
+      return errorHandler(res, StatusCodes.NOT_FOUND, "Patient not found");
+    }
+
+    // Check if the patient is assigned to the HCP
+    const patientIndex = hcp.patientsAssigned.indexOf(hospitalRecord._id);
+    if (patientIndex === -1) {
+      return errorHandler(
+        res,
+        StatusCodes.BAD_REQUEST,
+        "Patient is not assigned to this healthcare professional"
+      );
+    }
+
+    // Remove the patient from the HCP's patientsAssigned array
+    hcp.patientsAssigned.splice(patientIndex, 1);
+    await hcp.save();
+
+    successHandler(res, StatusCodes.OK, hcp, "Patient unassigned successfully");
+  } catch (error) {
+    console.error(error);
+    errorHandler(
+      res,
+      StatusCodes.INTERNAL_SERVER_ERROR,
+      "Failed to unassign patient"
     );
   }
 };
@@ -451,7 +550,10 @@ const createDischargeController = async (req, res) => {
       throw new Error("All fields are required.");
     }
 
-    console.log("Received discharge_data:", JSON.stringify(discharge_data, null, 2));
+    console.log(
+      "Received discharge_data:",
+      JSON.stringify(discharge_data, null, 2)
+    );
 
     const { discharge, hospitalRecordId } = await createDischarge(
       template_id,
@@ -487,7 +589,11 @@ const createDischargeController = async (req, res) => {
         console.error("Error aborting transaction:", abortError);
       }
     }
-    errorHandler(res, StatusCodes.INTERNAL_SERVER_ERROR, error.message || "Server Error.");
+    errorHandler(
+      res,
+      StatusCodes.INTERNAL_SERVER_ERROR,
+      error.message || "Server Error."
+    );
   } finally {
     if (session) {
       session.endSession();
@@ -507,7 +613,10 @@ const createEvaluationController = async (req, res) => {
       throw new Error("All fields are required.");
     }
 
-    console.log("Received evaluation_data:", JSON.stringify(evaluation_data, null, 2));
+    console.log(
+      "Received evaluation_data:",
+      JSON.stringify(evaluation_data, null, 2)
+    );
 
     const { evaluation, hospitalRecordId } = await createEvaluation(
       template_id,
@@ -543,7 +652,11 @@ const createEvaluationController = async (req, res) => {
         console.error("Error aborting transaction:", abortError);
       }
     }
-    errorHandler(res, StatusCodes.INTERNAL_SERVER_ERROR, error.message || "Server Error.");
+    errorHandler(
+      res,
+      StatusCodes.INTERNAL_SERVER_ERROR,
+      error.message || "Server Error."
+    );
   } finally {
     if (session) {
       session.endSession();
@@ -1141,18 +1254,25 @@ const getPatientFullDetails = async (req, res) => {
     // Find the hospital record
     const hospitalRecord = await HospitalRecord.findOne({ hospital_id });
     if (!hospitalRecord) {
-      return errorHandler(res, StatusCodes.NOT_FOUND, "Hospital record not found.");
+      return errorHandler(
+        res,
+        StatusCodes.NOT_FOUND,
+        "Hospital record not found."
+      );
     }
 
     // Find the patient and populate all related data
-    const patient = await Patient.findOne({ hospital_record: hospitalRecord._id })
-      .populate('biodata')
-      .populate('hospital_record')
-      .populate('vital_signs')
-      .populate('assessments')
-      .populate('treatments')
-      .populate('discharges')
-      .populate('evaluations');
+    const patient = await Patient.findOne({
+      hospital_record: hospitalRecord._id,
+    })
+      .populate("biodata")
+      .populate("hospital_record")
+      .populate("vital_signs")
+      .populate("assessments")
+      .populate("treatments")
+      .populate("discharges")
+      .populate("evaluations")
+      .populate("referrals");
 
     if (!patient) {
       return errorHandler(res, StatusCodes.NOT_FOUND, "Patient not found.");
@@ -1168,6 +1288,7 @@ const getPatientFullDetails = async (req, res) => {
       treatments: patient.treatments,
       discharges: patient.discharges,
       evaluations: patient.evaluations,
+      referrals: patient.referrals,
     };
 
     successHandler(
@@ -1182,6 +1303,398 @@ const getPatientFullDetails = async (req, res) => {
   }
 };
 
+const createAppointment = async (req, res) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    const { hospital_id, appointmentDateTime } = req.body;
+
+    if (!hospital_id || !appointmentDateTime) {
+      return errorHandler(
+        res,
+        StatusCodes.BAD_REQUEST,
+        "Hospital ID and appointment date-time are required."
+      );
+    }
+
+    const dateTime = parse(appointmentDateTime, "yyyy-MM-dd'T'HH:mm:ss.SSSX", new Date());
+    if (!isValid(dateTime)) {
+      return errorHandler(
+        res,
+        StatusCodes.BAD_REQUEST,
+        "Invalid date-time format. Please use ISO 8601 format."
+      );
+    }
+
+    if (!isFuture(dateTime)) {
+      return errorHandler(
+        res,
+        StatusCodes.BAD_REQUEST,
+        "Appointment date-time must be in the future."
+      );
+    }
+
+    const hospitalRecord = await HospitalRecord.findOne({
+      hospital_id,
+    }).session(session);
+    if (!hospitalRecord) {
+      return errorHandler(
+        res,
+        StatusCodes.NOT_FOUND,
+        "Hospital record not found."
+      );
+    }
+
+    // Check for existing appointments at the same time
+    const existingAppointment = hospitalRecord.appointments.find(
+      (app) =>
+        isEqual(startOfDay(app.date), startOfDay(dateTime)) &&
+        format(app.date, 'HH:mm:ss') === format(dateTime, 'HH:mm:ss') &&
+        app.status !== "Cancelled"
+    );
+    if (existingAppointment) {
+      return errorHandler(
+        res,
+        StatusCodes.CONFLICT,
+        "An appointment already exists at this time."
+      );
+    }
+
+    const newAppointment = {
+      date: dateTime,
+      time: format(dateTime, 'HH:mm:ss'),
+      status: "Scheduled",
+    };
+
+    hospitalRecord.appointments.push(newAppointment);
+    await hospitalRecord.save({ session });
+
+    await session.commitTransaction();
+    session.endSession();
+
+    successHandler(
+      res,
+      StatusCodes.CREATED,
+      newAppointment,
+      "Appointment created successfully."
+    );
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+    console.error("Error creating appointment:", error);
+    errorHandler(res, StatusCodes.INTERNAL_SERVER_ERROR, "Server Error.");
+  }
+};
+
+const cancelAppointment = async (req, res) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    const { hospital_id, appointmentId } = req.body;
+
+    if (!hospital_id || !appointmentId) {
+      return errorHandler(
+        res,
+        StatusCodes.BAD_REQUEST,
+        "Hospital ID and appointment ID are required."
+      );
+    }
+
+    const hospitalRecord = await HospitalRecord.findOne({
+      hospital_id,
+    }).session(session);
+    if (!hospitalRecord) {
+      return errorHandler(
+        res,
+        StatusCodes.NOT_FOUND,
+        "Hospital record not found."
+      );
+    }
+
+    const appointmentIndex = hospitalRecord.appointments.findIndex(
+      (app) => app._id.toString() === appointmentId
+    );
+
+    if (appointmentIndex === -1) {
+      return errorHandler(res, StatusCodes.NOT_FOUND, "Appointment not found.");
+    }
+
+    if (hospitalRecord.appointments[appointmentIndex].status === "Cancelled") {
+      return errorHandler(
+        res,
+        StatusCodes.BAD_REQUEST,
+        "Appointment is already cancelled."
+      );
+    }
+
+    if (hospitalRecord.appointments[appointmentIndex].status === "Completed") {
+      return errorHandler(
+        res,
+        StatusCodes.BAD_REQUEST,
+        "Cannot cancel a completed appointment."
+      );
+    }
+
+    hospitalRecord.appointments[appointmentIndex].status = "Cancelled";
+    await hospitalRecord.save({ session });
+
+    await session.commitTransaction();
+    session.endSession();
+
+    successHandler(
+      res,
+      StatusCodes.OK,
+      hospitalRecord.appointments[appointmentIndex],
+      "Appointment cancelled successfully."
+    );
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+    console.error("Error cancelling appointment:", error);
+    errorHandler(res, StatusCodes.INTERNAL_SERVER_ERROR, "Server Error.");
+  }
+};
+
+const completeAppointment = async (req, res) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    const { hospital_id, appointmentId } = req.body;
+
+    if (!hospital_id || !appointmentId) {
+      return errorHandler(
+        res,
+        StatusCodes.BAD_REQUEST,
+        "Hospital ID and appointment ID are required."
+      );
+    }
+
+    const hospitalRecord = await HospitalRecord.findOne({
+      hospital_id,
+    }).session(session);
+    if (!hospitalRecord) {
+      return errorHandler(
+        res,
+        StatusCodes.NOT_FOUND,
+        "Hospital record not found."
+      );
+    }
+
+    const appointmentIndex = hospitalRecord.appointments.findIndex(
+      (app) => app._id.toString() === appointmentId
+    );
+
+    if (appointmentIndex === -1) {
+      return errorHandler(res, StatusCodes.NOT_FOUND, "Appointment not found.");
+    }
+
+    if (hospitalRecord.appointments[appointmentIndex].status === "Completed") {
+      return errorHandler(
+        res,
+        StatusCodes.BAD_REQUEST,
+        "Appointment is already completed."
+      );
+    }
+
+    hospitalRecord.appointments[appointmentIndex].status = "Completed";
+    await hospitalRecord.save({ session });
+
+    await session.commitTransaction();
+    session.endSession();
+
+    successHandler(
+      res,
+      StatusCodes.OK,
+      hospitalRecord.appointments[appointmentIndex],
+      "Appointment completed successfully."
+    );
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+    console.error("Error completing appointment:", error);
+    errorHandler(res, StatusCodes.INTERNAL_SERVER_ERROR, "Server Error.");
+  }
+};
+
+const rescheduleAppointment = async (req, res) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    const { hospital_id, appointmentId, newAppointmentDateTime } = req.body;
+
+    if (!hospital_id || !appointmentId || !newAppointmentDateTime) {
+      return errorHandler(
+        res,
+        StatusCodes.BAD_REQUEST,
+        "Hospital ID, appointment ID, and new appointment date-time are required."
+      );
+    }
+
+    const newDateTime = parse(newAppointmentDateTime, "yyyy-MM-dd'T'HH:mm:ss.SSSX", new Date());
+    if (!isValid(newDateTime)) {
+      return errorHandler(
+        res,
+        StatusCodes.BAD_REQUEST,
+        "Invalid date-time format. Please use ISO 8601 format."
+      );
+    }
+
+    if (!isFuture(newDateTime)) {
+      return errorHandler(
+        res,
+        StatusCodes.BAD_REQUEST,
+        "New appointment date-time must be in the future."
+      );
+    }
+
+    const hospitalRecord = await HospitalRecord.findOne({
+      hospital_id,
+    }).session(session);
+    if (!hospitalRecord) {
+      return errorHandler(
+        res,
+        StatusCodes.NOT_FOUND,
+        "Hospital record not found."
+      );
+    }
+
+    const appointmentIndex = hospitalRecord.appointments.findIndex(
+      (app) => app._id.toString() === appointmentId
+    );
+
+    if (appointmentIndex === -1) {
+      return errorHandler(res, StatusCodes.NOT_FOUND, "Appointment not found.");
+    }
+
+    if (hospitalRecord.appointments[appointmentIndex].status === "Cancelled") {
+      return errorHandler(
+        res,
+        StatusCodes.BAD_REQUEST,
+        "Cannot reschedule a cancelled appointment."
+      );
+    }
+
+    if (hospitalRecord.appointments[appointmentIndex].status === "Completed") {
+      return errorHandler(
+        res,
+        StatusCodes.BAD_REQUEST,
+        "Cannot reschedule a completed appointment."
+      );
+    }
+
+    // Check for existing appointments at the new time
+    const existingAppointment = hospitalRecord.appointments.find(
+      (app) =>
+        isEqual(startOfDay(app.date), startOfDay(newDateTime)) &&
+        format(app.date, 'HH:mm:ss') === format(newDateTime, 'HH:mm:ss') &&
+        app.status !== "Cancelled" &&
+        app._id.toString() !== appointmentId
+    );
+    if (existingAppointment) {
+      return errorHandler(
+        res,
+        StatusCodes.CONFLICT,
+        "An appointment already exists at this new time."
+      );
+    }
+
+    hospitalRecord.appointments[appointmentIndex].date = newDateTime;
+    hospitalRecord.appointments[appointmentIndex].time = format(newDateTime, 'HH:mm:ss');
+    await hospitalRecord.save({ session });
+
+    await session.commitTransaction();
+    session.endSession();
+
+    successHandler(
+      res,
+      StatusCodes.OK,
+      hospitalRecord.appointments[appointmentIndex],
+      "Appointment rescheduled successfully."
+    );
+  } catch (error) {
+    await session.abortTransaction();
+    session.endSession();
+    console.error("Error rescheduling appointment:", error);
+    errorHandler(res, StatusCodes.INTERNAL_SERVER_ERROR, "Server Error.");
+  }
+};
+
+const getPatientAppointments = async (req, res) => {
+  try {
+    const { hospital_id } = req.body;
+
+    if (!hospital_id) {
+      return errorHandler(
+        res,
+        StatusCodes.BAD_REQUEST,
+        "Hospital ID is required."
+      );
+    }
+
+    const hospitalRecord = await HospitalRecord.findOne({ hospital_id });
+    if (!hospitalRecord) {
+      return errorHandler(
+        res,
+        StatusCodes.NOT_FOUND,
+        "Hospital record not found."
+      );
+    }
+
+    const appointments = hospitalRecord.appointments.sort(
+      (a, b) => b.date - a.date
+    );
+
+    successHandler(
+      res,
+      StatusCodes.OK,
+      appointments,
+      "Patient appointments retrieved successfully."
+    );
+  } catch (error) {
+    console.error("Error retrieving patient appointments:", error);
+    errorHandler(res, StatusCodes.INTERNAL_SERVER_ERROR, "Server Error.");
+  }
+};
+
+const updatePastAppointments = async () => {
+  const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+
+  try {
+    const result = await HospitalRecord.updateMany(
+      {
+        appointments: {
+          $elemMatch: {
+            date: { $lt: twentyFourHoursAgo },
+            status: "Scheduled",
+          },
+        },
+      },
+      {
+        $set: { "appointments.$[elem].status": "Missed" },
+      },
+      {
+        arrayFilters: [
+          {
+            "elem.date": { $lt: twentyFourHoursAgo },
+            "elem.status": "Scheduled",
+          },
+        ],
+        multi: true,
+      }
+    );
+
+    console.log(
+      `Updated ${result.nModified} past appointments to 'Missed' status.`
+    );
+  } catch (error) {
+    console.error("Error updating past appointments:", error);
+  }
+};
+
 module.exports = {
   registerPatientController,
   getHospitalRecordController,
@@ -1189,6 +1702,7 @@ module.exports = {
   createAssessmentController,
   createTreatmentController,
   assignPatientToHCP,
+  unassignPatientFromHCP,
   updateSessionCount,
   updateNightCount,
   updateMortalityStatus,
@@ -1203,5 +1717,11 @@ module.exports = {
   getAdminJurisdictionPatients,
   getAssignedPatients,
   createVitalSignController,
-  getPatientFullDetails
+  getPatientFullDetails,
+  createAppointment,
+  cancelAppointment,
+  rescheduleAppointment,
+  getPatientAppointments,
+  updatePastAppointments,
+  completeAppointment,
 };

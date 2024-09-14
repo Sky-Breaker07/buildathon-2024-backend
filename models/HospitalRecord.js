@@ -13,26 +13,26 @@ const hospitalRecordSchema = new mongoose.Schema({
     ref: "BioData",
     default: null,
   },
-
+  patient_type: {
+    type: String,
+    enum: ["In-Patient", "Out-Patient"],
+    required: false
+  },
   appointments: [
     {
       date: {
         type: Date,
         required: true,
+        default: Date.now(),
+      },
+      time:{
+        type: String,
+        default: "8:00AM"
       },
       status: {
         type: String,
-        enum: ["Scheduled", "Cancelled", "Completed"],
+        enum: ["Scheduled", "Cancelled", "Completed", "Missed"],
         default: "Scheduled",
-      },
-      time: {
-        type: String,
-        required: true,
-        validate: (value) => {
-          const timePattern = /^([01]?[0-9]|2[0-3]):[0-5][0-9]$/;
-          return timePattern.test(value);
-        },
-        message: "Invalid time format. Please use HH:MM format.",
       },
     },
   ],

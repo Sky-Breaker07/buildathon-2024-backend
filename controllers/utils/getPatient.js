@@ -61,7 +61,7 @@ const getPatient = async (hospital_id, res) => {
 					},
 				],
 			}).populate({
-				path: 'evaluations',
+				path: 'discharges',
 				select: '-hospital_record -_id',
 				populate: [
 					{

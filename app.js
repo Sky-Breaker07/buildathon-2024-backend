@@ -1,6 +1,7 @@
 // Module imports
 const dotenv = require("dotenv");
 dotenv.config();
+const cron = require('node-cron');
 
 const express = require("express");
 const cors = require("cors");
@@ -16,7 +17,7 @@ const evaluationTemplateRouter = require('./router/EvaluationTemplate');
 const treatmentTemplateRouter = require('./router/TreatmentTemplate');
 const referralTemplateRouter = require('./router/ReferralTemplate');
 const authRouter = require('./router/auth');
-
+const { updatePastAppointments } = require('./controllers/Patient');
 // App Setup
 const app = express();
 const PORT = process.env.PORT;
@@ -33,6 +34,11 @@ app.use('/api/v1/evaluation-template', evaluationTemplateRouter);
 app.use('/api/v1/treatment-template', treatmentTemplateRouter);
 app.use('/api/v1/referral-template', referralTemplateRouter);
 app.use('/api/v1/auth', authRouter);
+
+cron.schedule('0 0 * * *', () => {
+  console.log('Running daily appointment update');
+  updatePastAppointments();
+});
 
 const startConnection = async () => {
   try {

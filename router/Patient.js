@@ -8,6 +8,7 @@ const {
   createAssessmentController,
   createTreatmentController,
   assignPatientToHCP,
+  unassignPatientFromHCP,
   createDischargeController,
   createEvaluationController,
   updateMortalityStatus,
@@ -22,7 +23,12 @@ const {
   getAssignedPatients,
   createVitalSignController,
   createReferralController,
-  getPatientFullDetails
+  createAppointment,
+  getPatientFullDetails,
+  getPatientAppointments,
+  cancelAppointment,
+  rescheduleAppointment,
+  completeAppointment
 } = require("../controllers/Patient");
 
 
@@ -41,8 +47,12 @@ router.route("/update-patient-info").patch(updatePatientInfo);
 router.route("/").get(getAllPatients);
 router.route("/vital-sign").post(createVitalSignController);
 router.route("/referral").post(createReferralController);
+router.route("/appointment").post(createAppointment);
 router.route("/full-details").post(getPatientFullDetails);
-
+router.route("/appointments").post(getPatientAppointments);
+router.route("/cancel-appointment").post(cancelAppointment);
+router.route("/reschedule-appointment").post(rescheduleAppointment);
+router.route("/complete-appointment").post(completeAppointment);
 //protected routes
 router.use(authenticateStaff);
 
@@ -52,4 +62,5 @@ router.route("/transfer-patient").post(transferPatient);
 router.route("/accept-patient").post(acceptPatient);
 router.route("/reject-patient").post(rejectPatient);
 router.route("/admin-jurisdiction").get(getAdminJurisdictionPatients);
+router.route("/unassign-patient").post(unassignPatientFromHCP);
 module.exports = router;
