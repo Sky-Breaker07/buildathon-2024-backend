@@ -201,9 +201,20 @@ const getCurrentUser = async (req, res) => {
   }
 };
 
+// function to warm up the server
+const warmUpServer = async (req, res) => {
+  try {
+    successHandler(res, StatusCodes.OK, null, "Server is ready");
+  } catch (error) {
+    console.error(error);
+    errorHandler(res, StatusCodes.INTERNAL_SERVER_ERROR, "Failed to warm up server");
+  }
+};
+
 module.exports = {
   login,
   resetPassword,
   updatePassword,
-  getCurrentUser
+  getCurrentUser,
+  warmUpServer
 };

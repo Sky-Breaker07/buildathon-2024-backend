@@ -13,6 +13,8 @@ const staffRouter = require("./router/staff");
 const communicationRouter = require('./router/Communication');
 const dischargeTemplateRouter = require('./router/DischargeTemplate');
 const evaluationTemplateRouter = require('./router/EvaluationTemplate');
+const treatmentTemplateRouter = require('./router/TreatmentTemplate');
+const referralTemplateRouter = require('./router/ReferralTemplate');
 const authRouter = require('./router/auth');
 
 // App Setup
@@ -26,8 +28,10 @@ app.use("/api/v1/patients", patientRouter);
 app.use("/api/v1/assessment-template", assessmentTemplateRouter);
 app.use("/api/v1/staff", staffRouter);
 app.use('/api/v1/communication', communicationRouter);
-app.use('/api/discharge-templates', dischargeTemplateRouter);
-app.use('/api/evaluation-templates', evaluationTemplateRouter);
+app.use('/api/v1/discharge-template', dischargeTemplateRouter);
+app.use('/api/v1/evaluation-template', evaluationTemplateRouter);
+app.use('/api/v1/treatment-template', treatmentTemplateRouter);
+app.use('/api/v1/referral-template', referralTemplateRouter);
 app.use('/api/v1/auth', authRouter);
 
 const startConnection = async () => {

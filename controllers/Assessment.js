@@ -26,7 +26,7 @@ const createAssessment = async (
   const assessment = new Assessment({
     template: template._id,
     hospital_record: hospitalRecord._id,
-    assessment_data: new Map(Object.entries(assessment_data)),
+    assessment_data: assessment_data,
   });
 
   await assessment.save({ session });
@@ -91,4 +91,4 @@ const getAssessmentByHospitalRecord = async (hospital_record_id, res) => {
   }
 };
 
-module.exports = {createAssessment, getAssessmentById, getAssessmentByHospitalRecord}
+module.exports = { createAssessment, getAssessmentById, getAssessmentByHospitalRecord }

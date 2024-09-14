@@ -21,6 +21,7 @@ const {
   getAdminJurisdictionPatients,
   getAssignedPatients,
   createVitalSignController,
+  createReferralController,
   getPatientFullDetails
 } = require("../controllers/Patient");
 
@@ -39,6 +40,7 @@ router.route("/night-count").patch(updateNightCount);
 router.route("/update-patient-info").patch(updatePatientInfo);
 router.route("/").get(getAllPatients);
 router.route("/vital-sign").post(createVitalSignController);
+router.route("/referral").post(createReferralController);
 router.route("/full-details").post(getPatientFullDetails);
 
 //protected routes

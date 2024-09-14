@@ -6,57 +6,66 @@ const createEvaluationTemplate = async (req, res) => {
   try {
     const { name, profession, description, fields } = req.body;
 
-    if (typeof fields !== "object" || Object.keys(fields).length === 0) {
-      return errorHandler(
-        res,
-        StatusCodes.BAD_REQUEST,
-        "Fields must be a non-empty object"
-      );
+    console.log("Received fields:", JSON.stringify(fields, null, 2));
+
+    // Convert the fields object to a nested Map structure
+    const fieldsMap = new Map();
+    for (const [sectionKey, sectionValue] of Object.entries(fields)) {
+      fieldsMap.set(sectionKey, new Map(Object.entries(sectionValue)));
     }
 
-    const processedFields = new Map();
-    for (const [fieldName, fieldProps] of Object.entries(fields)) {
-      processedFields.set(fieldName, {
-        type: fieldProps.type,
-        required: fieldProps.required || false,
-        options: fieldProps.options || [],
-        label: fieldProps.label,
-        placeholder: fieldProps.placeholder,
-        defaultValue: fieldProps.defaultValue,
-      });
-    }
-
-    const template = new EvaluationTemplate({
+    const newTemplate = new EvaluationTemplate({
       name,
       profession,
       description,
-      fields: processedFields,
+      fields: fieldsMap,
     });
 
-    await template.save();
+    const savedTemplate = await newTemplate.save();
 
-    successHandler(
-      res,
-      StatusCodes.CREATED,
-      template,
-      "Evaluation template was created successfully"
+    // Convert fields back to a plain object for the response
+    const formattedTemplate = savedTemplate.toObject();
+    formattedTemplate.fields = Object.fromEntries(
+      Array.from(formattedTemplate.fields, ([sectionKey, sectionValue]) => [
+        sectionKey,
+        Object.fromEntries(sectionValue),
+      ])
     );
+
+    console.log("Saved template:", JSON.stringify(formattedTemplate, null, 2));
+
+    res.status(StatusCodes.CREATED).json(formattedTemplate);
   } catch (error) {
     console.error(error);
-    errorHandler(res, StatusCodes.INTERNAL_SERVER_ERROR, "Server Error");
+    errorHandler(res, StatusCodes.BAD_REQUEST, error.message);
   }
 };
 
 const getEvaluationTemplate = async (req, res) => {
-  const { id } = req.params;
-  if (!id) {
-    return errorHandler(res, StatusCodes.BAD_REQUEST, "No ID provided");
-  }
   try {
-    const evaluationTemplate = await EvaluationTemplate.findById(id);
-    res.status(StatusCodes.OK).json({ evaluationTemplate });
+    const { id } = req.params;
+    const template = await EvaluationTemplate.findById(id).lean();
+
+    if (!template) {
+      return errorHandler(res, StatusCodes.NOT_FOUND, "Template not found");
+    }
+
+    // Convert fields Map to a plain object
+    const formattedFields = {};
+    for (const [sectionKey, sectionValue] of Object.entries(template.fields || {})) {
+      formattedFields[sectionKey] = {};
+      for (const [fieldKey, fieldValue] of Object.entries(sectionValue || {})) {
+        formattedFields[sectionKey][fieldKey] = fieldValue;
+      }
+    }
+    template.fields = formattedFields;
+
+    console.log('Formatted template:', JSON.stringify(template, null, 2));
+
+    res.status(StatusCodes.OK).json(template);
   } catch (error) {
-    errorHandler(res, StatusCodes.INTERNAL_SERVER_ERROR, error.message);
+    console.error(error);
+    errorHandler(res, StatusCodes.INTERNAL_SERVER_ERROR, "Server Error");
   }
 };
 
@@ -80,29 +89,29 @@ const getEvaluationTemplatesByProfession = async (req, res) => {
 
 const getAllEvaluationTemplates = async (req, res) => {
   try {
-    const { page, limit } = req.query;
-    const { pageNumber, pageSize, skip } = paginateResults(page, limit);
+    const templates = await EvaluationTemplate.find().lean();
 
-    const totalTemplates = await EvaluationTemplate.countDocuments();
-    const evaluationTemplates = await EvaluationTemplate.find()
-      .skip(skip)
-      .limit(pageSize);
+    // Convert fields Map to a plain object for each template
+    const formattedTemplates = templates.map(template => {
+      const formattedFields = {};
+      for (const [sectionKey, sectionValue] of Object.entries(template.fields || {})) {
+        formattedFields[sectionKey] = {};
+        for (const [fieldKey, fieldValue] of Object.entries(sectionValue || {})) {
+          formattedFields[sectionKey][fieldKey] = fieldValue;
+        }
+      }
+      return {
+        ...template,
+        fields: formattedFields
+      };
+    });
 
-    const totalPages = Math.ceil(totalTemplates / pageSize);
+    console.log('Formatted templates:', JSON.stringify(formattedTemplates, null, 2));
 
-    successHandler(
-      res,
-      StatusCodes.OK,
-      {
-        evaluationTemplates,
-        currentPage: pageNumber,
-        totalPages,
-        totalTemplates,
-      },
-      "Evaluation templates retrieved successfully"
-    );
+    res.status(StatusCodes.OK).json({ evaluationTemplates: formattedTemplates });
   } catch (error) {
-    errorHandler(res, StatusCodes.INTERNAL_SERVER_ERROR, error.message);
+    console.error(error);
+    errorHandler(res, StatusCodes.INTERNAL_SERVER_ERROR, "Server Error");
   }
 };
 
@@ -125,25 +134,7 @@ const updateEvaluationTemplate = async (req, res) => {
     if (profession) existingTemplate.profession = profession;
     if (description) existingTemplate.description = description;
     if (isActive !== undefined) existingTemplate.isActive = isActive;
-
-    if (
-      fields &&
-      typeof fields === "object" &&
-      Object.keys(fields).length > 0
-    ) {
-      const processedFields = new Map();
-      for (const [fieldName, fieldProps] of Object.entries(fields)) {
-        processedFields.set(fieldName, {
-          type: fieldProps.type,
-          required: fieldProps.required || false,
-          options: fieldProps.options || [],
-          label: fieldProps.label,
-          placeholder: fieldProps.placeholder,
-          defaultValue: fieldProps.defaultValue,
-        });
-      }
-      existingTemplate.fields = processedFields;
-    }
+    if (fields) existingTemplate.fields = fields;
 
     await existingTemplate.save();
 
@@ -160,9 +151,9 @@ const updateEvaluationTemplate = async (req, res) => {
 };
 
 module.exports = {
-  createEvaluationTemplate,
-  getEvaluationTemplate,
-  getEvaluationTemplatesByProfession,
-  getAllEvaluationTemplates,
-  updateEvaluationTemplate,
-};
+	createEvaluationTemplate,
+	getEvaluationTemplate,
+	getEvaluationTemplatesByProfession,
+	getAllEvaluationTemplates,
+	updateEvaluationTemplate,
+}
