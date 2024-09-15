@@ -15,11 +15,12 @@ const {
   removeHealthcareProfessional,
   removeHealthInformationManager,
   removeAdminHealthcareProfessional,
+  superAdminExists
 } = require('../controllers/staff');
 
 // Public routes
 router.post('/register-super-admin', registerSuperAdmin);
-
+router.get('/super-admin-exists', superAdminExists);
 // Protected routes
 router.use(authenticateStaff);
 

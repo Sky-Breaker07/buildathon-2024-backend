@@ -8,7 +8,6 @@ const { errorHandler, successHandler } = require("../utils/utils");
 const jwt = require("jsonwebtoken");
 const mongoose = require("mongoose");
 
-
 const registerSuperAdmin = async (req, res) => {
   try {
     const {
@@ -21,14 +20,14 @@ const registerSuperAdmin = async (req, res) => {
       securityAnswer,
       organizationName,
       organizationAddress,
-      organizationDescription
+      organizationDescription,
     } = req.body;
 
     // Create the organization first
     const organization = await Organization.create({
       name: organizationName,
       address: organizationAddress,
-      description: organizationDescription
+      description: organizationDescription,
     });
 
     // Then create the SuperAdmin and associate it with the organization
@@ -40,7 +39,7 @@ const registerSuperAdmin = async (req, res) => {
       password,
       securityQuestion,
       securityAnswer,
-      organization: organization._id // Associate the SuperAdmin with the organization
+      organization: organization._id, // Associate the SuperAdmin with the organization
     });
 
     // Update the organization with the SuperAdmin reference
@@ -83,7 +82,7 @@ const registerAdminHealthcareProfessional = async (req, res) => {
       email,
       profession,
       securityQuestion,
-      securityAnswer
+      securityAnswer,
     } = req.body;
 
     const { staff_id: registeredBy } = req.staff;
@@ -111,7 +110,7 @@ const registerAdminHealthcareProfessional = async (req, res) => {
       password,
       isAdmin: true,
       registeredBy,
-      organization: organization._id // Set the organization
+      organization: organization._id, // Set the organization
     });
 
     // Generate the staff_id
@@ -132,8 +131,8 @@ const registerAdminHealthcareProfessional = async (req, res) => {
       isAdmin: adminHCP.isAdmin,
       organization: {
         name: organization.name,
-        organization_id: organization.organization_id
-      }
+        organization_id: organization.organization_id,
+      },
     };
 
     successHandler(
@@ -168,14 +167,25 @@ const registerHealthcareProfessional = async (req, res) => {
     const password = lastName.toLowerCase();
 
     // Find the Admin Healthcare Professional who is registering this HCP
-    const adminHCP = await HealthCareProfessional.findOne({ staff_id: registeredBy, isAdmin: true });
+    const adminHCP = await HealthCareProfessional.findOne({
+      staff_id: registeredBy,
+      isAdmin: true,
+    });
     if (!adminHCP) {
-      return errorHandler(res, StatusCodes.NOT_FOUND, "Admin Healthcare Professional not found");
+      return errorHandler(
+        res,
+        StatusCodes.NOT_FOUND,
+        "Admin Healthcare Professional not found"
+      );
     }
 
     // Check if the adminHCP has the same profession as the new registrant
     if (adminHCP.profession !== profession) {
-      return errorHandler(res, StatusCodes.FORBIDDEN, "Admin can only register Healthcare Professionals of the same profession");
+      return errorHandler(
+        res,
+        StatusCodes.FORBIDDEN,
+        "Admin can only register Healthcare Professionals of the same profession"
+      );
     }
 
     // Find the organization
@@ -238,17 +248,10 @@ const registerHealthcareProfessional = async (req, res) => {
 
 const registerHealthInformationManager = async (req, res) => {
   try {
-    const {
-      firstName,
-      lastName,
-      email,
-      securityQuestion,
-      securityAnswer
-    } = req.body;
-
+    const { firstName, lastName, email, securityQuestion, securityAnswer } =
+      req.body;
 
     const { staff_id: registeredBy } = req.staff;
-  
 
     const password = lastName.toLowerCase();
 
@@ -274,7 +277,7 @@ const registerHealthInformationManager = async (req, res) => {
       password,
       registeredBy,
       superadmin_id: superAdmin._id, // Use the _id of the fetched SuperAdmin
-      organization: organization._id // Set the organization
+      organization: organization._id, // Set the organization
     });
 
     // Generate the staff_id
@@ -294,8 +297,8 @@ const registerHealthInformationManager = async (req, res) => {
       registeredBy: him.registeredBy,
       organization: {
         name: organization.name,
-        organization_id: organization.organization_id
-      }
+        organization_id: organization.organization_id,
+      },
     };
 
     successHandler(
@@ -319,16 +322,18 @@ const getAllHealthcareProfessionals = async (req, res) => {
     const healthcareProfessionals = await HealthCareProfessional.find({})
       .select("-password -securityAnswer -securityQuestion")
       .populate({
-        path: 'organization',
-        select: 'name organization_id'
+        path: "organization",
+        select: "name organization_id",
       });
 
-    const formattedHCPs = healthcareProfessionals.map(hcp => ({
+    const formattedHCPs = healthcareProfessionals.map((hcp) => ({
       ...hcp.toObject(),
-      organization: hcp.organization ? {
-        name: hcp.organization.name,
-        organization_id: hcp.organization.organization_id
-      } : null
+      organization: hcp.organization
+        ? {
+            name: hcp.organization.name,
+            organization_id: hcp.organization.organization_id,
+          }
+        : null,
     }));
 
     successHandler(
@@ -353,16 +358,18 @@ const getAdminHealthcareProfessionals = async (req, res) => {
       { isAdmin: true },
       "-password -securityAnswer -securityQuestion"
     ).populate({
-      path: 'organization',
-      select: 'name organization_id'
+      path: "organization",
+      select: "name organization_id",
     });
 
-    const formattedAdminHCPs = adminHealthcareProfessionals.map(hcp => ({
+    const formattedAdminHCPs = adminHealthcareProfessionals.map((hcp) => ({
       ...hcp.toObject(),
-      organization: hcp.organization ? {
-        name: hcp.organization.name,
-        organization_id: hcp.organization.organization_id
-      } : null
+      organization: hcp.organization
+        ? {
+            name: hcp.organization.name,
+            organization_id: hcp.organization.organization_id,
+          }
+        : null,
     }));
 
     successHandler(
@@ -388,16 +395,18 @@ const getHealthcareProfessionalsByProfession = async (req, res) => {
       { profession },
       "-password -securityAnswer -securityQuestion"
     ).populate({
-      path: 'organization',
-      select: 'name organization_id'
+      path: "organization",
+      select: "name organization_id",
     });
 
-    const formattedHCPs = healthcareProfessionals.map(hcp => ({
+    const formattedHCPs = healthcareProfessionals.map((hcp) => ({
       ...hcp.toObject(),
-      organization: hcp.organization ? {
-        name: hcp.organization.name,
-        organization_id: hcp.organization.organization_id
-      } : null
+      organization: hcp.organization
+        ? {
+            name: hcp.organization.name,
+            organization_id: hcp.organization.organization_id,
+          }
+        : null,
     }));
 
     successHandler(
@@ -422,17 +431,23 @@ const getAllHealthInformationManagers = async (req, res) => {
       {},
       "-password -securityAnswer -securityQuestion"
     ).populate({
-      path: 'organization',
-      select: 'name organization_id'
+      path: "organization",
+      select: "name organization_id",
     });
 
-    const formattedManagers = healthInformationManagers.map(manager => ({
+    const formattedManagers = healthInformationManagers.map((manager) => ({
       ...manager.toObject(),
-      name: `${manager.firstName.charAt(0).toUpperCase() + manager.firstName.slice(1)} ${manager.lastName.charAt(0).toUpperCase() + manager.lastName.slice(1)}`,
-      organization: manager.organization ? {
-        name: manager.organization.name,
-        organization_id: manager.organization.organization_id
-      } : null
+      name: `${
+        manager.firstName.charAt(0).toUpperCase() + manager.firstName.slice(1)
+      } ${
+        manager.lastName.charAt(0).toUpperCase() + manager.lastName.slice(1)
+      }`,
+      organization: manager.organization
+        ? {
+            name: manager.organization.name,
+            organization_id: manager.organization.organization_id,
+          }
+        : null,
     }));
 
     successHandler(
@@ -505,11 +520,12 @@ const removeHealthcareProfessional = async (req, res) => {
     const admin = await HealthCareProfessional.findOne({
       staff_id: performedBy,
     });
-    const targetHCP = await HealthCareProfessional.findOne({ staff_id })
-      .populate({
-        path: 'organization',
-        select: 'name organization_id'
-      });
+    const targetHCP = await HealthCareProfessional.findOne({
+      staff_id,
+    }).populate({
+      path: "organization",
+      select: "name organization_id",
+    });
 
     if (!admin || !targetHCP) {
       return errorHandler(
@@ -542,10 +558,12 @@ const removeHealthcareProfessional = async (req, res) => {
         name: targetHCP.name,
         email: targetHCP.email,
         profession: targetHCP.profession,
-        organization: targetHCP.organization ? {
-          name: targetHCP.organization.name,
-          organization_id: targetHCP.organization.organization_id
-        } : null
+        organization: targetHCP.organization
+          ? {
+              name: targetHCP.organization.name,
+              organization_id: targetHCP.organization.organization_id,
+            }
+          : null,
       },
     });
 
@@ -630,46 +648,78 @@ const removeAdminHealthcareProfessional = async (req, res) => {
       return errorHandler(
         res,
         StatusCodes.FORBIDDEN,
-        'Only Super Admin can remove Admin Healthcare Professionals'
+        "Only Super Admin can remove Admin Healthcare Professionals"
       );
     }
 
     // Find and remove the Admin Healthcare Professional
-    const adminHCP = await HealthCareProfessional.findOneAndDelete({ staff_id, isAdmin: true });
+    const adminHCP = await HealthCareProfessional.findOneAndDelete({
+      staff_id,
+      isAdmin: true,
+    });
 
     if (!adminHCP) {
       return errorHandler(
         res,
         StatusCodes.NOT_FOUND,
-        'Admin Healthcare Professional not found'
+        "Admin Healthcare Professional not found"
       );
     }
 
     // Log the action
     await Archive.create({
-      action: 'REMOVE',
-      targetModel: 'HealthCareProfessional',
+      action: "REMOVE",
+      targetModel: "HealthCareProfessional",
       targetId: staff_id,
       performedBy,
       details: {
         name: adminHCP.name,
         email: adminHCP.email,
-        profession: adminHCP.profession
-      }
+        profession: adminHCP.profession,
+      },
     });
 
     successHandler(
       res,
       StatusCodes.OK,
       null,
-      'Admin Healthcare Professional removed successfully'
+      "Admin Healthcare Professional removed successfully"
     );
   } catch (error) {
     console.error(error);
     errorHandler(
       res,
       StatusCodes.INTERNAL_SERVER_ERROR,
-      'Failed to remove Admin Healthcare Professional'
+      "Failed to remove Admin Healthcare Professional"
+    );
+  }
+};
+
+const superAdminExists = async (req, res) => {
+  try {
+    const superAdmin = await SuperAdmin.exists();
+
+    if (superAdmin) {
+      successHandler(
+        res,
+        StatusCodes.OK,
+        { exists: true },
+        "Super Admin exists"
+      );
+    } else {
+      successHandler(
+        res,
+        StatusCodes.OK,
+        { exists: false },
+        "Super Admin does not exist"
+      );
+    }
+  } catch (error) {
+    console.error(error);
+    errorHandler(
+      res,
+      StatusCodes.INTERNAL_SERVER_ERROR,
+      "Failed to check if Super Admin exists"
     );
   }
 };
@@ -687,4 +737,5 @@ module.exports = {
   removeHealthcareProfessional,
   removeHealthInformationManager,
   removeAdminHealthcareProfessional,
+  superAdminExists,
 };
