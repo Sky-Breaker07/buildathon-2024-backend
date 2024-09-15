@@ -17,6 +17,7 @@ const evaluationTemplateRouter = require('./router/EvaluationTemplate');
 const treatmentTemplateRouter = require('./router/TreatmentTemplate');
 const referralTemplateRouter = require('./router/ReferralTemplate');
 const authRouter = require('./router/auth');
+const statisticsRouter = require('./router/Statistics');
 const { updatePastAppointments } = require('./controllers/Patient');
 // App Setup
 const app = express();
@@ -34,7 +35,7 @@ app.use('/api/v1/evaluation-template', evaluationTemplateRouter);
 app.use('/api/v1/treatment-template', treatmentTemplateRouter);
 app.use('/api/v1/referral-template', referralTemplateRouter);
 app.use('/api/v1/auth', authRouter);
-
+app.use('/api/v1/statistics', statisticsRouter);
 cron.schedule('0 0 * * *', () => {
   console.log('Running daily appointment update');
   updatePastAppointments();

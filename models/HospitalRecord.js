@@ -46,11 +46,11 @@ const hospitalRecordSchema = new mongoose.Schema({
   ],
   sessionCount: {
     type: Number,
-    default: null,
+    default: 0,
   },
   nightCount: {
     type: Number,
-    default: null,
+    default: 0,
   },
   mortality: {
     status: {
