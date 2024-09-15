@@ -16,7 +16,7 @@ const biodataSchema = new mongoose.Schema(
 
     sex: {
       type: String,
-      enum: ["male", "female"],
+      enum: ["Male", "Female"],
       required: true,
     },
 
@@ -40,7 +40,7 @@ const biodataSchema = new mongoose.Schema(
 
     marital_status: {
       type: String,
-      enum: ["single", "married", "divorced", "widowed"],
+      enum: ["Single", "Married", "Divorced", "Widowed"],
       required: true,
     },
     address: {

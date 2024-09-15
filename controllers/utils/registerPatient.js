@@ -4,6 +4,12 @@ const HospitalRecord = require('../../models/HospitalRecord');
 const Patient = require('../../models/Patient');
 const { parse, isValid, format } = require('date-fns');
 
+// Capitalize word function
+const capitalizeWord = (word) => {
+  if (typeof word !== 'string' || word.length === 0) return word;
+  return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+};
+
 const registerPatient = async (bioDataInfo, appointmentInfo, patientType) => {
   const session = await mongoose.startSession();
   session.startTransaction();
@@ -29,9 +35,14 @@ const registerPatient = async (bioDataInfo, appointmentInfo, patientType) => {
     });
     await hospitalRecord.save({ session });
 
-    const bioData = new BioData({
+    // Capitalize marital_status and sex
+    const capitalizedBioDataInfo = {
       ...bioDataInfo,
-    });
+      marital_status: capitalizeWord(bioDataInfo.marital_status),
+      sex: capitalizeWord(bioDataInfo.sex)
+    };
+
+    const bioData = new BioData(capitalizedBioDataInfo);
     await bioData.save({ session });
 
     hospitalRecord.biodata = bioData._id;
