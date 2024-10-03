@@ -150,10 +150,37 @@ const updateReferralTemplate = async (req, res) => {
   }
 };
 
+const deleteReferralTemplate = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const deletedTemplate = await ReferralTemplate.findByIdAndDelete(id);
+
+    if (!deletedTemplate) {
+      return errorHandler(
+        res,
+        StatusCodes.NOT_FOUND,
+        "Referral template not found"
+      );
+    }
+
+    successHandler(
+      res,
+      StatusCodes.OK,
+      { id: deletedTemplate._id },
+      "Referral template deleted successfully"
+    );
+  } catch (error) {
+    console.error(error);
+    errorHandler(res, StatusCodes.INTERNAL_SERVER_ERROR, "Server Error");
+  }
+};
+
 module.exports = {
 	createReferralTemplate,
 	getReferralTemplate,
 	getReferralTemplatesByProfession,
 	getAllReferralTemplates,
 	updateReferralTemplate,
+	deleteReferralTemplate,
 }

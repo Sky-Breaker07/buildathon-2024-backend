@@ -150,10 +150,37 @@ const updateEvaluationTemplate = async (req, res) => {
   }
 };
 
+const deleteEvaluationTemplate = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const deletedTemplate = await EvaluationTemplate.findByIdAndDelete(id);
+
+    if (!deletedTemplate) {
+      return errorHandler(
+        res,
+        StatusCodes.NOT_FOUND,
+        "Evaluation template not found"
+      );
+    }
+
+    successHandler(
+      res,
+      StatusCodes.OK,
+      { id: deletedTemplate._id },
+      "Evaluation template deleted successfully"
+    );
+  } catch (error) {
+    console.error(error);
+    errorHandler(res, StatusCodes.INTERNAL_SERVER_ERROR, "Server Error");
+  }
+};
+
 module.exports = {
 	createEvaluationTemplate,
 	getEvaluationTemplate,
 	getEvaluationTemplatesByProfession,
 	getAllEvaluationTemplates,
 	updateEvaluationTemplate,
+	deleteEvaluationTemplate,
 }

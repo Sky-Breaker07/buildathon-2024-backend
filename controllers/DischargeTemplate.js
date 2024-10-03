@@ -150,10 +150,37 @@ const updateDischargeTemplate = async (req, res) => {
   }
 };
 
+const deleteDischargeTemplate = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const deletedTemplate = await DischargeTemplate.findByIdAndDelete(id);
+
+    if (!deletedTemplate) {
+      return errorHandler(
+        res,
+        StatusCodes.NOT_FOUND,
+        "Discharge template not found"
+      );
+    }
+
+    successHandler(
+      res,
+      StatusCodes.OK,
+      { id: deletedTemplate._id },
+      "Discharge template deleted successfully"
+    );
+  } catch (error) {
+    console.error(error);
+    errorHandler(res, StatusCodes.INTERNAL_SERVER_ERROR, "Server Error");
+  }
+};
+
 module.exports = {
 	createDischargeTemplate,
 	getDischargeTemplate,
 	getDischargeTemplatesByProfession,
 	getAllDischargeTemplates,
 	updateDischargeTemplate,
+	deleteDischargeTemplate,
 }

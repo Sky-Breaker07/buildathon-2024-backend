@@ -27,6 +27,11 @@ const fieldSchema = new mongoose.Schema(
 			required: true,
 		},
 
+		isImage: {
+			type: Boolean,
+			default: false,
+		},
+
 		placeholder: String,
 
 		defaultValue: mongoose.Schema.Types.Mixed,

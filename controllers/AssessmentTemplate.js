@@ -168,10 +168,37 @@ const updateAssessmentTemplate = async (req, res) => {
   }
 };
 
+const deleteAssessmentTemplate = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const deletedTemplate = await AssessmentTemplate.findByIdAndDelete(id);
+
+    if (!deletedTemplate) {
+      return errorHandler(
+        res,
+        StatusCodes.NOT_FOUND,
+        "Assessment template not found"
+      );
+    }
+
+    successHandler(
+      res,
+      StatusCodes.OK,
+      { id: deletedTemplate._id },
+      "Assessment template deleted successfully"
+    );
+  } catch (error) {
+    console.error(error);
+    errorHandler(res, StatusCodes.INTERNAL_SERVER_ERROR, "Server Error");
+  }
+};
+
 module.exports = {
 	createAssessmentTemplate,
 	getAssessmentTemplate,
 	getAssessmentTemplatesByProfession,
 	getAllAssessmentTemplates,
 	updateAssessmentTemplate,
+	deleteAssessmentTemplate,
 }

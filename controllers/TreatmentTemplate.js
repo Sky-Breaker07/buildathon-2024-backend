@@ -150,10 +150,37 @@ const updateTreatmentTemplate = async (req, res) => {
   }
 };
 
+const deleteTreatmentTemplate = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const deletedTemplate = await TreatmentTemplate.findByIdAndDelete(id);
+
+    if (!deletedTemplate) {
+      return errorHandler(
+        res,
+        StatusCodes.NOT_FOUND,
+        "Treatment template not found"
+      );
+    }
+
+    successHandler(
+      res,
+      StatusCodes.OK,
+      { id: deletedTemplate._id },
+      "Treatment template deleted successfully"
+    );
+  } catch (error) {
+    console.error(error);
+    errorHandler(res, StatusCodes.INTERNAL_SERVER_ERROR, "Server Error");
+  }
+};
+
 module.exports = {
 	createTreatmentTemplate,
 	getTreatmentTemplate,
 	getTreatmentTemplatesByProfession,
 	getAllTreatmentTemplates,
 	updateTreatmentTemplate,
+	deleteTreatmentTemplate,
 }

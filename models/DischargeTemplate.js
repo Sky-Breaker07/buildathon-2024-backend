@@ -28,6 +28,10 @@ const fieldSchema = new mongoose.Schema(
 		},
 
 		placeholder: String,
+		isImage: {
+			type: Boolean,
+			default: false,
+		},
 
 		defaultValue: mongoose.Schema.Types.Mixed,
 	},
